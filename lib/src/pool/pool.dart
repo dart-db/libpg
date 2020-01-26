@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:collection';
-import 'package:pedantic/pedantic.dart';
 
 import 'package:channel/channel.dart';
 import 'package:libpg/libpg.dart';
+import 'package:pedantic/pedantic.dart';
 
 abstract class PGPool {
+  factory PGPool(ConnSettings settings) => _PGPoolImpl(settings);
+
   ConnSettings get settings;
 
   set maxConnections(int value);
@@ -23,25 +26,28 @@ abstract class PGPool {
 }
 
 class _PGPoolImpl implements PGPool {
+  @override
   final ConnSettings settings;
 
   int _maxConnections;
 
   int _maxIdleConnections;
 
-  DateTime _idleConnectionTimeout;
+  Duration _idleConnectionTimeout;
 
-  DateTime _connectionReuseTimeout;
+  Duration _connectionReuseTimeout;
 
   final _connections = HashSet<Connection>();
 
   final _usedConnections = HashSet<Connection>();
 
-  final _idleConnections = SplayTreeMap<DateTime, HashSet<Connection>>();
+  final _idleConnections = <Connection>{};
+
+  final _idleTimes = HashMap<Connection, DateTime>();
+
+  Timer _idleTimer;
 
   final _idleAdded = Channel<void>();
-
-  // TODO final _ =
 
   _PGPoolImpl(this.settings);
 
@@ -51,11 +57,8 @@ class _PGPoolImpl implements PGPool {
   @override
   set maxConnections(int value) {
     _maxConnections = value;
-    while (_connections.length > _maxConnections) {
-      final connection = _getShortestIdleConnection();
-      if (connection == null) break;
-      _removeConnection(connection);
-    }
+
+    _whenExceedMaxConnections();
   }
 
   @override
@@ -65,25 +68,19 @@ class _PGPoolImpl implements PGPool {
   set maxIdleConnections(int value) {
     _maxIdleConnections = value;
 
-    while((_connections.length - _usedConnections.length) > _maxIdleConnections) {
-      final connection = _getShortestIdleConnection();
-      if (connection == null) break;
-      _removeConnection(connection);
-    }
+    _whenExceedIdleConnections();
   }
 
-  DateTime get idleConnectionTimeout => _idleConnectionTimeout;
+  Duration get idleConnectionTimeout => _idleConnectionTimeout;
 
-  set idleConnectionTimeout(DateTime value) {
+  set idleConnectionTimeout(Duration value) {
     _idleConnectionTimeout = value;
-    // TODO
   }
 
-  DateTime get connectionReuseTimeout => _connectionReuseTimeout;
+  Duration get connectionReuseTimeout => _connectionReuseTimeout;
 
-  set connectionReuseTimeout(DateTime value) {
+  set connectionReuseTimeout(Duration value) {
     _connectionReuseTimeout = value;
-    // TODO
   }
 
   @override
@@ -173,49 +170,78 @@ class _PGPoolImpl implements PGPool {
   }
 
   Connection _getLongestIdleConnection() {
-    final key = _idleConnections.firstKey();
-    final connections = _idleConnections[key];
-
-    final connection = connections.first;
-    connections.remove(connection);
-    if (connections.isEmpty) {
-      _idleConnections.remove(key);
-    }
-
-    return connection;
-  }
-
-  Connection _getShortestIdleConnection() {
-    final key = _idleConnections.lastKey();
-    final connections = _idleConnections[key];
-
-    final connection = connections.first;
-    connections.remove(connection);
-    if (connections.isEmpty) {
-      _idleConnections.remove(key);
-    }
+    final connection = _idleConnections.first;
+    _removeIdleConnection(connection);
 
     return connection;
   }
 
   void _addIdleConnection(Connection connection) {
-    HashSet<Connection> connections = _idleConnections[connection.connectedAt];
-    if (connections == null) {
-      connections = HashSet<Connection>();
-      _idleConnections[connection.connectedAt] = connections;
-    }
-    connections.add(connection);
+    _idleTimer?.cancel();
+
+    _idleConnections.add(connection);
+    _idleTimes[connection] = DateTime.now();
+
     _idleAdded.send(null);
+
+    _updateIdleTimer();
   }
 
   void _removeIdleConnection(Connection connection) {
-    final key = connection.connectedAt;
-    final connections = _idleConnections[key];
-    if (connections == null) return;
+    _idleTimer?.cancel();
 
-    connections.remove(connection);
-    if (connections.isEmpty) {
-      _idleConnections.remove(key);
+    _idleConnections.remove(connection);
+    _idleTimes.remove(connection);
+
+    _updateIdleTimer();
+  }
+
+  void _updateIdleTimer() {
+    if (_idleConnections.isNotEmpty) {
+      _idleTimer = Timer(
+          DateTime.now().difference(_idleTimes[_idleConnections.first]),
+          _doIdleTimer);
+    }
+  }
+
+  void _doIdleTimer() {
+    _whenExceedMaxConnections();
+    _whenExceedIdleConnections();
+    _whenBelowIdleConnections();
+
+    _updateIdleTimer();
+  }
+
+  void _whenExceedMaxConnections() {
+    _idleTimer?.cancel();
+
+    while (_connections.length > _maxConnections) {
+      final connection = _getLongestIdleConnection();
+      if (connection == null) break;
+      _removeConnection(connection);
+    }
+  }
+
+  void _whenExceedIdleConnections() {
+    _idleTimer?.cancel();
+
+    while (_idleConnections.isNotEmpty &&
+        (_connections.length - _usedConnections.length) > _maxIdleConnections) {
+      final connection = _idleConnections.first;
+      final at = _idleTimes[connection];
+      if (DateTime.now().difference(at) < _connectionReuseTimeout) break;
+      _removeConnection(connection);
+    }
+  }
+
+  void _whenBelowIdleConnections() {
+    _idleTimer?.cancel();
+
+    while (_idleConnections.isNotEmpty) {
+      final connection = _idleConnections.first;
+      final at = _idleTimes[connection];
+      if (DateTime.now().difference(at) < _idleConnectionTimeout) break;
+      _removeConnection(connection);
     }
   }
 
@@ -226,15 +252,3 @@ class _PGPoolImpl implements PGPool {
 class PoolStats {
   // TODO
 }
-
-// Find oldest idle connection to execute query
-// Remove newest idle connection when max connections exceeds, after transient idle connection timeout
-// ====> Set based on insert into connectedAt
-// Ability to find the entry quick to remove
-
-// Find connections with idle timeouts
-// ====> Timer based trigger
-
-//
-// idle connections
-// connections in use
