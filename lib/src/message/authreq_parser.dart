@@ -1,9 +1,9 @@
 import 'package:libpg/src/buffer/read_buffer.dart';
 
 class AuthMethod {
-  static const error = 0;
+  // static const error = 0;
 
-  static const ok = 1;
+  static const ok = 0;
 
   static const kerberosV5 = 2;
 
@@ -23,8 +23,8 @@ abstract class AuthMessageParser {
     final authMethod = buffer.readInt32();
 
     switch (authMethod) {
-      case AuthMethod.error:
-        return AuthErrorMessage();
+      // TODO case AuthMethod.error:
+      //   return AuthErrorMessage();
       case AuthMethod.ok:
         return AuthOkMessage();
       case AuthMethod.md5Password:
@@ -40,10 +40,11 @@ abstract class AuthMessageParser {
   }
 }
 
+/*
 class AuthErrorMessage implements AuthMessageParser {
   @override
   final int method = AuthMethod.error;
-}
+}*/
 
 class AuthOkMessage implements AuthMessageParser {
   @override
@@ -65,12 +66,14 @@ class AuthMd5PasswordMessage implements AuthMessageParser {
 }
 
 class UnsupportedAuthMessage implements AuthMessageParser {
+  @override
   final int method;
 
   UnsupportedAuthMessage(this.method);
 }
 
 class UnknownAuthMessage implements AuthMessageParser {
+  @override
   final int method;
 
   UnknownAuthMessage(this.method);

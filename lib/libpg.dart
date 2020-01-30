@@ -3,5 +3,5 @@
 /// More dartdocs go here.
 library libpg;
 
-export 'src/connection.dart';
-
+export 'src/connection/connection.dart';
+export 'src/logger/logger.dart';

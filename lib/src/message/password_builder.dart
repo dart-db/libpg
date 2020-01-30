@@ -1,9 +1,9 @@
 import 'package:libpg/src/buffer/write_buffer.dart';
 
-class PasswordMessageBuilder {
+class PasswordMessage {
   final String password;
 
-  PasswordMessageBuilder(this.password);
+  PasswordMessage(this.password);
 
   List<int> build() {
     final buffer = WriteBuffer();

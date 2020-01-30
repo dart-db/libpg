@@ -11,7 +11,6 @@ void main() {
       buffer1.append(List<int>.generate(10, (i) => 10 + i));
       buffer1.append(List<int>.generate(10, (i) => 20 + i));
       buffer1.append(List<int>.generate(10, (i) => 30 + i));
-
     });
 
     test('readRow', () {

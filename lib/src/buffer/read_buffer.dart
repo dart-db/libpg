@@ -13,15 +13,11 @@ class ReadBuffer {
 
   int _totalLength = 0;
 
-  int _bytesRead = 0;
-
-  int get bytesRead => _bytesRead;
-
   int get bytesAvailable => _totalLength - _position;
 
   int readByte() {
     if (_queue.isEmpty) {
-      throw Exception("Attempted to read from an empty buffer.");
+      throw Exception('Attempted to read from an empty buffer.');
     }
 
     int byte = _queue.first[_position];
@@ -32,8 +28,6 @@ class ReadBuffer {
       _queue.removeFirst();
       _position = 0;
     }
-
-    _bytesRead++;
 
     return byte;
   }
@@ -81,12 +75,13 @@ class ReadBuffer {
     if (max == null || available <= max) {
       _queue.removeFirst();
       final ret = first.getRange(_position, first.length).toList();
+      _totalLength -= first.length;
       _position = 0;
       return ret;
     }
 
     final ret = first.getRange(_position, _position + max).toList();
-    _position += _position + max;
+    _position += max;
     return ret;
   }
 

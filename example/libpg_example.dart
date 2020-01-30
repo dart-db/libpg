@@ -1,5 +1,7 @@
 import 'package:libpg/libpg.dart';
 
 Future<void> main() async {
-  await Connection.connect(ConnSettings(username: 'teja', password: 'learning'));
+  final conn = await ConnectionImpl.connect(
+      ConnSettings(username: 'teja', password: 'learning'));
+  await conn.query('SELECT 1');
 }

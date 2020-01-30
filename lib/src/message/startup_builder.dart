@@ -1,6 +1,6 @@
 import 'package:libpg/src/buffer/write_buffer.dart';
 
-class StartupMessageBuilder {
+class StartupMessage {
   final int protocolVersion;
 
   final String username;
@@ -11,7 +11,7 @@ class StartupMessageBuilder {
 
   final String applicationName;
 
-  StartupMessageBuilder(
+  StartupMessage(
       {this.protocolVersion,
       this.username,
       this.databaseName,
