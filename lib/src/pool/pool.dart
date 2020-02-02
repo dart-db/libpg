@@ -92,7 +92,7 @@ class _PGPoolImpl implements PGPool {
     _getConnection().then((connection) {
       try {
         final ret = connection.query(query, queryName: queryName);
-        controller.addStream(ret.rows);
+        controller.addStream(ret);
         ret.finished.then((_) => completer.complete(),
             onError: (e, s) => completer.completeError(e, s));
       } catch (e, s) {

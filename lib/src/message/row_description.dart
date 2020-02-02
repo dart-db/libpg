@@ -37,7 +37,7 @@ class FieldDescription {
     final int oid = buffer.readInt32();
     final int typeLen = buffer.readInt16();
     final int typeModifier = buffer.readInt32();
-    final int formatType = buffer.readInt16();
+    final int formatCode = buffer.readInt16();
 
     return FieldDescription(
         name: name,
@@ -46,7 +46,7 @@ class FieldDescription {
         oid: oid,
         typeLen: typeLen,
         typeModifier: typeModifier,
-        formatType: formatType);
+        formatType: formatCode);
   }
 }
 

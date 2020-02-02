@@ -34,6 +34,9 @@ abstract class MessageType {
   /// Represents character 'C'
   static const commandComplete = 67;
 
+  /// Represents character 'X'
+  static const terminate = 88;
+
   static const name = <int, String>{
     backendKey: 'Backend key',
     authRequest: 'Authentication',

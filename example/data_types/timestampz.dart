@@ -7,8 +7,9 @@ void log(LogMessage msg) {
 Future<void> main() async {
   final conn = await ConnectionImpl.connect(
       ConnSettings(
-          username: 'teja', password: 'learning', databaseName: 'trying'),
-      logger: log);  final row = await (conn.query('SELECT 1'));
+          username: 'teja', password: 'learning', databaseName: 'learning'),
+      logger: log);
+  final row = await (conn.query('SELECT * FROM TTimestampz;'));
   await for (final row in row) {
     print(row);
   }

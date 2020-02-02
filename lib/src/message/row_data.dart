@@ -6,6 +6,8 @@ class RowData {
 
   RowData(this.fieldValues);
 
+  List<int> operator[](int index) => fieldValues[index];
+
   static RowData parse(ReadBuffer buffer, MessageHeader header) {
     final count = buffer.readInt16();
 

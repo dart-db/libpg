@@ -19,6 +19,7 @@ import 'package:libpg/src/message/query_builder.dart';
 import 'package:libpg/src/message/row_data.dart';
 import 'package:libpg/src/message/row_description.dart';
 import 'package:libpg/src/message/startup_builder.dart';
+import 'package:libpg/src/message/terminate.dart';
 
 import 'message_type.dart';
 
@@ -304,12 +305,12 @@ class ConnectionImpl implements Connection {
   void _handleParameterStatusMsg() {
     final message = ParameterStatus.parse(_buffer);
 
-    // _parameters[message.name] = message.value;
+    _parameters[message.name] = message.value;
 
     _log(LogMessage(
         connectionId: connectionId,
         connectionName: connectionName,
-        message: 'Received parameter ${message.name}'));
+        message: 'Received parameter ${message.name}=${message.value}'));
 
     switch (message.name) {
       case 'TimeZone':
@@ -367,6 +368,11 @@ class ConnectionImpl implements Connection {
     if (!_connected.isCompleted) {
       _connected.completeError(msg);
       _shutdown();
+      return;
+    }
+    if (_currentQuery != null) {
+      _currentQuery.addError(msg);
+      return;
     }
     // TODO
   }
@@ -430,7 +436,23 @@ class ConnectionImpl implements Connection {
 
   @override
   Future<void> close() async {
-    // TODO
+    if (_state == _ConnState.closed) {
+      return;
+    }
+
+    _log(LogMessage(
+        connectionName: connectionName,
+        connectionId: connectionId,
+        message: 'Sending close message'));
+
+    try {
+      final msg = Terminate();
+      _socket.add(msg.build());
+      await _socket.flush();
+    } catch (e) {
+      // TODO
+    }
+
     await _shutdown();
   }
 
@@ -451,13 +473,8 @@ class ConnectionImpl implements Connection {
 
   static Future<ConnectionImpl> connect(ConnSettings settings,
       {String connectionName, Logger logger}) async {
-    Socket socket;
-    socket = await Socket.connect(settings.hostname, settings.port);
-    /*
-    try {
-      socket = await Socket.connect(settings.hostname, settings.port);
-    } on SocketException catch (e) {}
-    */
+    Socket socket = await Socket.connect(settings.hostname, settings.port);
+
     // TODO ssl
 
     final conn = ConnectionImpl._(socket, settings,
@@ -504,10 +521,8 @@ class CommandTag {
   }
 }
 
-class Rows {
-  final Stream<Row> rows;
-
+class Rows extends StreamView<Row> {
   final Future<void> finished;
 
-  Rows(this.rows, this.finished);
+  Rows(Stream<Row> rows, this.finished) : super(rows);
 }
