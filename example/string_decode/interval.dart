@@ -5,11 +5,11 @@ void log(LogMessage msg) {
 }
 
 Future<void> main() async {
-  final conn = await ConnectionImpl.connect(
+  final conn = await Connection.connect(
       ConnSettings(
           username: 'teja', password: 'learning', databaseName: 'learning'),
       logger: log);
-  final row = await (conn.query('SELECT NULL;'));
+  final row = await (conn.query('SELECT * FROM TInterval;'));
   await for (final row in row) {
     print(row);
   }

@@ -1,5 +1,5 @@
-import 'package:libpg/libpg.dart';
 import 'package:libpg/src/buffer/read_buffer.dart';
+import 'package:libpg/src/message/message_header.dart';
 
 class RowData {
   final List<List<int>> fieldValues;

@@ -5,7 +5,7 @@ void log(LogMessage msg) {
 }
 
 Future<void> main() async {
-  await ConnectionImpl.connect(
+  await Connection.connect(
           ConnSettings(username: 'teja', password: 'learning', port: 5433),
           logger: log)
       .catchError((e) {

@@ -1,8 +1,6 @@
 import 'package:libpg/src/buffer/read_buffer.dart';
 
 class AuthMethod {
-  // static const error = 0;
-
   static const ok = 0;
 
   static const kerberosV5 = 2;
@@ -16,15 +14,13 @@ class AuthMethod {
   static const scmCredential = 6;
 }
 
-abstract class AuthMessageParser {
+abstract class AuthMessage {
   int get method;
 
-  static AuthMessageParser parse(ReadBuffer buffer) {
+  static AuthMessage parse(ReadBuffer buffer) {
     final authMethod = buffer.readInt32();
 
     switch (authMethod) {
-      // TODO case AuthMethod.error:
-      //   return AuthErrorMessage();
       case AuthMethod.ok:
         return AuthOkMessage();
       case AuthMethod.md5Password:
@@ -40,18 +36,12 @@ abstract class AuthMessageParser {
   }
 }
 
-/*
-class AuthErrorMessage implements AuthMessageParser {
-  @override
-  final int method = AuthMethod.error;
-}*/
-
-class AuthOkMessage implements AuthMessageParser {
+class AuthOkMessage implements AuthMessage {
   @override
   final int method = AuthMethod.ok;
 }
 
-class AuthMd5PasswordMessage implements AuthMessageParser {
+class AuthMd5PasswordMessage implements AuthMessage {
   @override
   final int method = AuthMethod.md5Password;
 
@@ -65,14 +55,14 @@ class AuthMd5PasswordMessage implements AuthMessageParser {
   }
 }
 
-class UnsupportedAuthMessage implements AuthMessageParser {
+class UnsupportedAuthMessage implements AuthMessage {
   @override
   final int method;
 
   UnsupportedAuthMessage(this.method);
 }
 
-class UnknownAuthMessage implements AuthMessageParser {
+class UnknownAuthMessage implements AuthMessage {
   @override
   final int method;
 
