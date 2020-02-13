@@ -8,6 +8,10 @@ class WriteBuffer {
     _data.add(byte);
   }
 
+  void addBytes(Iterable<int> bytes) {
+    _data.addAll(bytes);
+  }
+
   void addInt16(int i) {
     assert(i >= -32768 && i <= 32767);
 
@@ -38,6 +42,28 @@ class WriteBuffer {
     _data.add(b);
     _data.add(c);
     _data.add(d);
+  }
+
+  void addInt64(int i) {
+    // TODO assert(i >= -2147483648 && i <= 2147483647);
+
+    int a = (i >> 56) & 0x000000FF;
+    int b = (i >> 48) & 0x000000FF;
+    int c = (i >> 40) & 0x000000FF;
+    int d = (i >> 32) & 0x000000FF;
+    int e = (i >> 24) & 0x000000FF;
+    int f = (i >> 16) & 0x000000FF;
+    int g = (i >> 8) & 0x000000FF;
+    int h = i & 0x000000FF;
+
+    _data.add(a);
+    _data.add(b);
+    _data.add(c);
+    _data.add(d);
+    _data.add(e);
+    _data.add(f);
+    _data.add(g);
+    _data.add(h);
   }
 
   void addUtf8String(String s) {

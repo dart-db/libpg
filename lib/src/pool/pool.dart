@@ -127,6 +127,14 @@ class _PGPoolImpl implements PGPool {
   }
 
   @override
+  Future<PreparedQuery> prepare(String query,
+      {String statementName = '',
+      String queryName,
+      List<int> paramOIDs = const []}) async {
+    // TODO
+  }
+
+  @override
   Future<Tx> beginTransaction() {
     // TODO
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/codec/decoder/decoder.dart';
@@ -6,13 +7,23 @@ import 'package:libpg/src/connection/row.dart';
 import 'package:libpg/src/message/row_data.dart';
 import 'package:libpg/src/message/row_description.dart';
 
-class QueryEntry {
+abstract class QueueEntry {
+  String get queryId;
+
+  String get queryName;
+
+  void addError(error, [StackTrace trace]);
+}
+
+class SimpleQueryEntry implements QueueEntry {
   final String statement;
 
   final DateTime startedAt;
 
+  @override
   final String queryId;
 
+  @override
   final String queryName;
 
   final _completer = Completer<CommandTag>();
@@ -25,12 +36,13 @@ class QueryEntry {
 
   dynamic _error;
 
-  QueryEntry(this.statement, {DateTime startedAt, this.queryId, this.queryName})
+  SimpleQueryEntry(this.statement,
+      {DateTime startedAt, this.queryId, this.queryName})
       : startedAt = startedAt ?? DateTime.now();
 
   Stream<Row> get stream => _controller.stream;
 
-  Future<void> get onFinish => _completer.future;
+  Future<CommandTag> get onFinish => _completer.future;
 
   List<FieldDescription> get fieldDescriptions => _fields;
 
@@ -71,11 +83,168 @@ class QueryEntry {
     _controller.add(Row(columns, columnsMap, values, map));
   }
 
-  void addError(error) {
+  @override
+  void addError(error, [StackTrace trace]) {
     _error ??= error;
     if (!_controller.isClosed) {
-      _controller.addError(error);
+      _controller.addError(error, trace);
     }
+    _completer.completeError(error, trace); // TODO should we do this?
+  }
+
+  void setCommandTag(CommandTag tag) {
+    _commandTag = tag;
+  }
+
+  void finish() {
+    _controller.close();
+    if (_error == null) {
+      _completer.complete(_commandTag);
+    } else {
+      _completer.completeError(_error);
+    }
+  }
+}
+
+enum ParseEntryState {
+  unsent,
+  sent,
+  parsed,
+  fieldDescriptionReceived,
+  // TODO
+
+  error,
+  successful
+}
+
+class ParseEntry implements QueueEntry {
+  final Connection connection;
+
+  final String statement;
+
+  final String statementName;
+
+  final List<int> paramOIDs;
+
+  @override
+  final String queryName;
+
+  @override
+  final String queryId;
+
+  final _completer = Completer<PreparedQuery>();
+
+  ParseEntryState state = ParseEntryState.unsent;
+
+  List<int> receivedParamOIDs;
+
+  List<FieldDescription> _fieldDescription;
+
+  ParseEntry(this.connection, this.statement,
+      {this.statementName = '',
+      this.paramOIDs = const [],
+      this.queryId,
+      this.queryName});
+
+  Future<PreparedQuery> get future => _completer.future;
+
+  void setFieldsDescription(List<FieldDescription> fields) {
+    _fieldDescription = fields;
+    state = ParseEntryState.fieldDescriptionReceived;
+  }
+
+  void setReceivedParamOIDs(List<int> value) {
+    receivedParamOIDs = value;
+  }
+
+  @override
+  void addError(error, [StackTrace stack]) {
+    state = ParseEntryState.error;
+    _completer.completeError(error, stack);
+  }
+
+  PreparedQuery complete() {
+    final result = PreparedQuery(
+        connection,
+        statementName,
+        UnmodifiableListView(receivedParamOIDs),
+        UnmodifiableListView(_fieldDescription));
+    state = ParseEntryState.successful;
+    _completer.complete(result);
+    return result;
+  }
+}
+
+class ExtendedQueryEntry implements QueueEntry {
+  @override
+  final String queryId;
+
+  @override
+  final String queryName;
+
+  final List<dynamic> params;
+
+  final PreparedQuery query;
+
+  final _completer = Completer<CommandTag>();
+
+  final _controller = StreamController<Row>();
+
+  final dynamic paramFormats;
+
+  CommandTag _commandTag;
+
+  dynamic _error;
+
+  ExtendedQueryEntry(this.query, this.params,
+      {this.paramFormats, this.queryId, this.queryName});
+
+  Stream<Row> get stream => _controller.stream;
+
+  List<FieldDescription> get fieldDescriptions => query.fieldDescriptions;
+
+  int get fieldCount => fieldDescriptions.length;
+
+  CommandTag get commandTag => _commandTag;
+
+  Future<CommandTag> get onFinish => _completer.future;
+
+  void addRow(RowData rowData) {
+    final values = List<dynamic>(fieldDescriptions.length);
+    final columns = List<Column>(fieldDescriptions.length);
+    final columnsMap = <String, Column>{};
+    final map = <String, dynamic>{};
+
+    for (int i = 0; i < fieldDescriptions.length; i++) {
+      final description = fieldDescriptions[i];
+      final data = rowData[i];
+
+      final value = decode(description, data);
+      final column = Column(
+          index: i,
+          name: description.name,
+          value: value,
+          oid: description.oid,
+          formatCode: description.formatType,
+          typeModifier: description.typeModifier,
+          typeLen: description.typeLen);
+
+      values[i] = value;
+      columns[i] = column;
+      map[column.name] = value;
+      columnsMap[column.name] = column;
+    }
+
+    _controller.add(Row(columns, columnsMap, values, map));
+  }
+
+  @override
+  void addError(error, [StackTrace trace]) {
+    _error ??= error;
+    if (!_controller.isClosed) {
+      _controller.addError(error, trace);
+    }
+    _completer.completeError(error, trace); // TODO should we do this?
   }
 
   void setCommandTag(CommandTag tag) {

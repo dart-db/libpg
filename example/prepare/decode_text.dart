@@ -9,9 +9,12 @@ Future<void> main() async {
       ConnSettings(
           username: 'teja', password: 'learning', databaseName: 'learning'),
       logger: log);
-  final row = await (conn.query('SELECT * FROM TTimestampz;'));
-  await for (final row in row) {
-    print(row);
+  final statement = await conn.prepare(r'SELECT * FROM ttext;',
+      statementName: 'st1');
+  // final rows = await conn.queryPrepared(statement, [TextData([52]), TextData([51])]);
+  final rows = await conn.queryPrepared(statement, []);
+  await for (var r in rows) {
+    print(r.asMap());
   }
   await conn.close();
 }

@@ -5,9 +5,9 @@ void log(LogMessage msg) {
 }
 
 Future<void> main() async {
-  await Connection.connect(
-      ConnSettings(username: 'tej', password: 'learning'),
-      logger: log).catchError((e) {
-        print('Connection error: $e');
+  await Connection.connect(ConnSettings(username: 'tej', password: 'learning'),
+          logger: log)
+      .catchError((e) {
+    print('Connection error: $e');
   });
 }

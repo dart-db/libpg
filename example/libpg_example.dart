@@ -8,7 +8,8 @@ Future<void> main() async {
   final conn = await Connection.connect(
       ConnSettings(
           username: 'teja', password: 'learning', databaseName: 'trying'),
-      logger: log);  final row = await (conn.query('SELECT 1'));
+      logger: log);
+  final row = await (conn.query('SELECT 1'));
   await for (final row in row) {
     print(row);
   }

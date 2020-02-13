@@ -37,6 +37,33 @@ abstract class MessageType {
   /// Represents character 'X'
   static const terminate = 88;
 
+  /// Represents character 'P'
+  static const parse = 80;
+
+  /// Represents character 'D'
+  static const describe = 68;
+
+  /// Represents character 'B'
+  static const bind = 66;
+
+  /// Represents character 'E'
+  static const execute = 69;
+
+  /// Represents character 'S'
+  static const sync = 83;
+
+  /// Represents character '1'
+  static const parseComplete = 49;
+
+  /// Represents character '2'
+  static const bindComplete = 50;
+
+  /// Represents character 't'
+  static const parameterDescription = 116;
+
+  /// Represents character 'n'
+  static const noData = 110;
+
   static const name = <int, String>{
     backendKey: 'Backend key',
     authRequest: 'Authentication',
@@ -47,6 +74,8 @@ abstract class MessageType {
     rowDescription: 'Row description',
     rowData: 'Row data',
     commandComplete: 'Command complete',
+    parseComplete: 'Prase complete',
+    parameterDescription: 'Parameter description',
   };
 }
 

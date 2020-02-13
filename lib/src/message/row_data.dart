@@ -6,16 +6,16 @@ class RowData {
 
   RowData(this.fieldValues);
 
-  List<int> operator[](int index) => fieldValues[index];
+  List<int> operator [](int index) => fieldValues[index];
 
   static RowData parse(ReadBuffer buffer, MessageHeader header) {
     final count = buffer.readInt16();
 
     final fieldValues = List<List<int>>(count);
 
-    for(int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++) {
       final length = buffer.readInt32();
-      if(length == -1) continue;
+      if (length == -1) continue;
       final bytes = buffer.readBytes(length);
       fieldValues[i] = bytes;
     }

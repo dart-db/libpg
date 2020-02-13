@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -7,6 +8,7 @@ import 'package:convert/convert.dart';
 import 'package:crypto/crypto.dart';
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/buffer/read_buffer.dart';
+import 'package:libpg/src/codec/encode/encode.dart';
 import 'package:libpg/src/connection/query_entry.dart';
 import 'package:libpg/src/connection/row.dart';
 import 'package:libpg/src/id/generator.dart';
@@ -15,7 +17,9 @@ import 'package:libpg/src/message/authreq.dart';
 import 'package:libpg/src/message/backendkey.dart';
 import 'package:libpg/src/message/error_response.dart';
 import 'package:libpg/src/message/message_header.dart';
+import 'package:libpg/src/message/parameter_description.dart';
 import 'package:libpg/src/message/parameter_status.dart';
+import 'package:libpg/src/message/parse.dart';
 import 'package:libpg/src/message/password.dart';
 import 'package:libpg/src/message/query.dart';
 import 'package:libpg/src/message/row_data.dart';
@@ -23,7 +27,7 @@ import 'package:libpg/src/message/row_description.dart';
 import 'package:libpg/src/message/startup.dart';
 import 'package:libpg/src/message/terminate.dart';
 
-import 'message_type.dart';
+import '../message/message_type.dart';
 
 class ConnectionImpl implements Connection {
   final Socket _socket;
@@ -44,11 +48,11 @@ class ConnectionImpl implements Connection {
 
   final Logger _logger;
 
-  final _queryQueue = Queue<QueryEntry>();
+  final _queryQueue = Queue<QueueEntry>();
 
-  QueryEntry _currentQuery;
+  QueueEntry _currentQuery;
 
-  IdGenerator _queryIdGenerator;
+  final IdGenerator _queryIdGenerator;
 
   ConnectionImpl._(this._socket, this.settings,
       {Logger logger, String connectionName, IdGenerator queryIdGenerator})
@@ -59,8 +63,10 @@ class ConnectionImpl implements Connection {
     _state = _ConnState.socketConnected;
 
     _socket.listen(_gotData, onError: (e) {
+      print(e); // TODO log instead
       // TODO
     }, onDone: () {
+      print('done');
       // TODO
     });
 
@@ -100,8 +106,6 @@ class ConnectionImpl implements Connection {
         if (_buffer.bytesAvailable < 5) return;
 
         _curMsgHeader = MessageHeader.fromBuffer(_buffer);
-
-        // TODO validate message length based on type
       }
 
       if (_curMsgHeader.length > _buffer.bytesAvailable) return;
@@ -121,7 +125,7 @@ class ConnectionImpl implements Connection {
     final messageName = MessageType.name[_curMsgHeader.messageType];
     _log(LogMessage(
         message:
-        'Received backend message with type ${_curMsgHeader.messageType} ${messageName != null ? '($messageName)' : ''}',
+            'Received backend message with type ${_curMsgHeader.messageType} (${String.fromCharCode(_curMsgHeader.messageType)}: ${messageName != null ? '$messageName' : ''})',
         connectionId: connectionId,
         connectionName: connectionName));
     switch (_curMsgHeader.messageType) {
@@ -131,17 +135,29 @@ class ConnectionImpl implements Connection {
       case MessageType.rowDescription:
         _handleRowDescriptionMsg();
         break;
+      case MessageType.parameterDescription:
+        _handleParameterDescriptionMsg();
+        break;
       case MessageType.commandComplete:
         _handleCommandCompleteMsg();
         break;
       case MessageType.readyForQuery:
-        _handleReadyForQuery();
+        _handleReadyForQueryMsg();
+        break;
+      case MessageType.noData:
+        // TODO
+        break;
+      case MessageType.bindComplete:
+        _handleBindCompleteMsg();
+        break;
+      case MessageType.parseComplete:
+        _handleParseCompleteMsg();
         break;
       case MessageType.parameterStatus:
         _handleParameterStatusMsg();
         break;
       case MessageType.authRequest:
-        _handleAuthRequest();
+        _handleAuthRequestMsg();
         break;
         break;
       case MessageType.backendKey:
@@ -157,7 +173,7 @@ class ConnectionImpl implements Connection {
     }
   }
 
-  void _handleAuthRequest() {
+  void _handleAuthRequestMsg() {
     if (_state != _ConnState.authenticating) {
       throw Exception('Invalid connection state while authenticating');
     }
@@ -195,11 +211,6 @@ class ConnectionImpl implements Connection {
       return;
     }
 
-    /*
-    if (msg is AuthErrorMessage) {
-      throw Exception('Authentication error'); // TODO
-    }*/
-
     if (msg is UnsupportedAuthMessage) {
       throw Exception('Unsupported auth method request received from server');
     }
@@ -207,7 +218,7 @@ class ConnectionImpl implements Connection {
     throw Exception('Unknown auth method request received from server');
   }
 
-  void _handleReadyForQuery() {
+  void _handleReadyForQueryMsg() {
     final status = _buffer.readByte();
 
     if (status == ReadyQueryStatus.idle) {
@@ -231,7 +242,14 @@ class ConnectionImpl implements Connection {
           connectionName: connectionName,
           connectionId: connectionId,
           message: 'Query finished'));
-      _currentQuery.finish();
+      if (_currentQuery is SimpleQueryEntry) {
+        (_currentQuery as SimpleQueryEntry).finish();
+      } else if (_currentQuery is ParseEntry) {
+        final prepared = (_currentQuery as ParseEntry).complete();
+        _prepared.add(prepared);
+      } else if (_currentQuery is ExtendedQueryEntry) {
+        (_currentQuery as ExtendedQueryEntry).finish();
+      }
       _currentQuery = null;
     }
 
@@ -240,7 +258,7 @@ class ConnectionImpl implements Connection {
       _connected.complete(this);
     }
 
-    Timer.run(_sendQuery);
+    Timer.run(_sendNext);
   }
 
   void _handleParameterStatusMsg() {
@@ -277,8 +295,22 @@ class ConnectionImpl implements Connection {
         queryName: _currentQuery.queryName,
         queryId: _currentQuery.queryId,
         message:
-        'Received row description with field count ${msg.fieldCount}'));
-    _currentQuery.setFieldsDescription(msg.fields);
+            'Received row description with field count ${msg.fieldCount}'));
+    if (_currentQuery is SimpleQueryEntry) {
+      (_currentQuery as SimpleQueryEntry).setFieldsDescription(msg.fields);
+    } else if (_currentQuery is ParseEntry) {
+      (_currentQuery as ParseEntry).setFieldsDescription(msg.fields);
+    } else {
+      throw Exception(''); // TODO
+    }
+  }
+
+  void _handleParameterDescriptionMsg() {
+    final msg = ParameterDescriptionMsg.parse(_buffer);
+    if (_currentQuery is ParseEntry) {
+      // TODO (_currentQuery as ParseEntry).
+    }
+    // TODO
   }
 
   void _handleRowDataMsg() {
@@ -289,12 +321,26 @@ class ConnectionImpl implements Connection {
         queryName: _currentQuery.queryName,
         queryId: _currentQuery.queryId,
         message: 'Received row data'));
-    _currentQuery.addRow(msg);
+    if (_currentQuery is SimpleQueryEntry) {
+      (_currentQuery as SimpleQueryEntry).addRow(msg);
+    } else if (_currentQuery is ExtendedQueryEntry) {
+      (_currentQuery as ExtendedQueryEntry).addRow(msg);
+    } else {
+      throw Exception(''); // TODO
+    }
   }
 
   void _handleCommandCompleteMsg() {
     final msg = CommandComplete.parse(_buffer, _curMsgHeader);
-    _currentQuery.setCommandTag(CommandTag.parse(msg.tag));
+    if (_currentQuery is SimpleQueryEntry) {
+      (_currentQuery as SimpleQueryEntry)
+          .setCommandTag(CommandTag.parse(msg.tag));
+    } else if (_currentQuery is ExtendedQueryEntry) {
+      (_currentQuery as ExtendedQueryEntry)
+          .setCommandTag(CommandTag.parse(msg.tag));
+    } else {
+      throw Exception(''); // TODO
+    }
   }
 
   void _handleErrorResponseMsg() {
@@ -311,8 +357,12 @@ class ConnectionImpl implements Connection {
       _shutdown();
       return;
     }
+    // TODO handle fatal errors?
+
     if (_currentQuery != null) {
       _currentQuery.addError(msg);
+      _currentQuery = null;
+      _sendNext();
       return;
     }
     // TODO
@@ -326,7 +376,7 @@ class ConnectionImpl implements Connection {
 
   DateTime get connectedAt => _connectedAt;
 
-  void _sendQuery() {
+  void _sendNext() {
     if (_currentQuery != null) return;
     if (_queryQueue.isEmpty) return;
     if (_state == _ConnState.closed) return;
@@ -338,36 +388,156 @@ class ConnectionImpl implements Connection {
 
     _state = _ConnState.busy;
     _currentQuery = _queryQueue.removeFirst();
-    _log(LogMessage(
-        connectionName: connectionName,
-        connectionId: connectionId,
-        queryName: _currentQuery.queryName,
-        queryId: _currentQuery.queryId,
-        message: 'Sending new query ${_currentQuery.queryId}'));
-    _socket.add(QueryMessage(_currentQuery.statement).build());
+    if (_currentQuery is SimpleQueryEntry) {
+      _sendSimpleQuery(_currentQuery);
+    } else if (_currentQuery is ParseEntry) {
+      _sendParseEntry(_currentQuery);
+      // TODO
+    } else if (_currentQuery is ExtendedQueryEntry) {
+      _sendExtendedQueryEntry(_currentQuery);
+      // TODO
+    }
     // TODO transaction state
   }
 
-  QueryEntry _enqueueQuery(String query, {String queryName}) {
-    final queryId = _queryIdGenerator.get;
-    final entry =
-    QueryEntry(query, queryId: queryId, queryName: queryName ?? queryId);
+  void _sendSimpleQuery(SimpleQueryEntry query) {
+    _log(LogMessage(
+        connectionName: connectionName,
+        connectionId: connectionId,
+        queryName: query.queryName,
+        queryId: query.queryId,
+        message: 'Sending new query ${query.queryId}'));
+    _socket.add(QueryMessage(query.statement).build());
+    // TODO transaction state
+  }
+
+  void _sendParseEntry(ParseEntry query) {
+    final parseMsg = ParseMessage(query.statement,
+        name: query.statementName, paramOIDs: query.paramOIDs);
+    final describeMsg =
+        DescribeMessage(DescribeMessage.statementType, query.statementName);
+    final syncMsg = SyncMessage();
+
+    _socket.add(parseMsg.build());
+    _socket.add(describeMsg.build());
+    _socket.add(syncMsg.build());
+    query.state = ParseEntryState.sent;
+  }
+
+  void _sendExtendedQueryEntry(ExtendedQueryEntry query) {
+    final bindMsg = Bind(query.params,
+        statementName: query.query.name,
+        portalName: '' /* TODO */,
+        outputFormats: 0 /* TODO */,
+        paramFormats: query.paramFormats);
+    final executeMsg = Execute(portal: '' /* TODO */);
+    final syncMsg = SyncMessage();
+
+    _socket.add(bindMsg.build());
+    _socket.add(executeMsg.build());
+    _socket.add(syncMsg.build());
+  }
+
+  void _enqueueQuery(QueueEntry entry, {String queryName}) {
     _queryQueue.add(entry);
-    if (_queryQueue.length == 1) _sendQuery();
-    return entry;
+    if (_queryQueue.length == 1) _sendNext();
+  }
+
+  void _handleParseCompleteMsg() {
+    if (_currentQuery is! ParseEntry) {
+      throw Exception('');
+    }
+
+    final query = _currentQuery as ParseEntry;
+    query.state = ParseEntryState.parsed;
+    _log(LogMessage(
+        connectionName: connectionName,
+        connectionId: connectionId,
+        queryName: query.queryName,
+        queryId: query.queryId,
+        message: 'Parse complete!'));
+  }
+
+  void _handleBindCompleteMsg() {
+    if (_currentQuery is! ExtendedQueryEntry) {
+      throw Exception('');
+    }
+    // TODO
   }
 
   @override
-  Rows query(String query, {String queryName}) {
-    final entry = _enqueueQuery(query, queryName: queryName);
+  Rows query(String sql, {String queryName}) {
+    final queryId = _queryIdGenerator.get;
+    final entry = SimpleQueryEntry(sql,
+        queryId: queryId, queryName: queryName ?? queryId);
+    _enqueueQuery(entry, queryName: queryName);
     return Rows(entry.stream.cast<Row>(), entry.onFinish);
   }
 
   @override
-  Future<CommandTag> execute(String query, {String queryName}) async {
-    final entry = _enqueueQuery(query, queryName: queryName);
-    await entry.onFinish;
-    return entry.commandTag;
+  Future<CommandTag> execute(String sql,
+      {String queryName, List<dynamic> values}) async {
+    final rows = query(sql, queryName: queryName);
+    return rows.finished;
+  }
+
+  @override
+  Future<PreparedQuery> prepare(String query,
+      {String statementName = '',
+      String queryName,
+      List<int> paramOIDs = const []}) async {
+    final entry = ParseEntry(this, query,
+        statementName: statementName,
+        paramOIDs: paramOIDs,
+        queryId: _queryIdGenerator.get,
+        queryName: queryName);
+    _enqueueQuery(entry);
+    return entry.future;
+  }
+
+  final _prepared = <PreparedQuery>{};
+
+  @override
+  Rows queryPrepared(PreparedQuery query, List<dynamic> params,
+      {String queryName}) {
+    dynamic paramFormats = List<int>.filled(params.length, 1);
+    int i = -1;
+    bool hasTextFormat = false;
+    params = params.map<List<int>>((p) {
+      i++;
+      if (p is TextData) {
+        hasTextFormat = true;
+        paramFormats[i] = 0;
+        return p.data;
+      } else if (p is ToSql) {
+        hasTextFormat = true;
+        paramFormats[i] = 0;
+        return utf8.encode(p.toSql());
+      } else if (p is BinaryData) {
+        return p.data;
+      } else if (p is ToPGBinary) {
+        return p.toPGBinary();
+      } else {
+        final data = encode(p);
+        if (data.type == 0) {
+          hasTextFormat = true;
+          paramFormats[i] = 0;
+        }
+        return data.data;
+      }
+    }).toList();
+    if (!hasTextFormat) {
+      paramFormats = 1;
+    }
+    final entry = ExtendedQueryEntry(
+      query,
+      params,
+      queryId: _queryIdGenerator.get,
+      queryName: queryName,
+      paramFormats: paramFormats,
+    );
+    _enqueueQuery(entry);
+    return Rows(entry.stream, entry.onFinish);
   }
 
   @override

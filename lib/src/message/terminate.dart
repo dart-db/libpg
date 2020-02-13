@@ -1,5 +1,5 @@
 import 'package:libpg/src/buffer/write_buffer.dart';
-import 'package:libpg/src/connection/message_type.dart';
+import 'package:libpg/src/message/message_type.dart';
 
 class Terminate {
   List<int> build() {
