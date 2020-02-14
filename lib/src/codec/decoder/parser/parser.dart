@@ -119,7 +119,7 @@ String _parseString(dynamic _input) {
   if (_input is! StringReader) _input = StringReader(string: _input);
   final StringReader input = _input;
 
-  final regExp = RegExp(r'^"(([^"]|(""))*)"');
+  final regExp = RegExp(r'^"((\\"|""|[^"])*)"');
   final match = regExp.firstMatch(input.string);
 
   if(match == null) throw Exception();
