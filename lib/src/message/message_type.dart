@@ -58,11 +58,17 @@ abstract class MessageType {
   /// Represents character '2'
   static const bindComplete = 50;
 
+  /// Represents character '2'
+  static const closeComplete = 51;
+
   /// Represents character 't'
   static const parameterDescription = 116;
 
   /// Represents character 'n'
   static const noData = 110;
+
+  /// Represents character 'C'
+  static const close = 67;
 
   static const name = <int, String>{
     backendKey: 'Backend key',
@@ -76,6 +82,7 @@ abstract class MessageType {
     commandComplete: 'Command complete',
     parseComplete: 'Prase complete',
     parameterDescription: 'Parameter description',
+    closeComplete: 'Close complete'
   };
 }
 

@@ -158,3 +158,7 @@ class ErrorResponse {
         routine: routine);
   }
 }
+
+abstract class ErrorResponseCode {
+  static const invalidSqlStatementName = "26000";
+}

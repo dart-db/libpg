@@ -1,4 +1,4 @@
-import 'package:libpg/src/connection/query_entry.dart';
+import 'package:libpg/src/connection/query_queue_entry/query_entry.dart';
 
 DateTime decodeTimestampText(int oid, String value) {
   if (value == 'infinity' || value == '-infinity') {

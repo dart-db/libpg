@@ -42,15 +42,10 @@ abstract class Querier {
       String queryName,
       List<int> paramOIDs = const []});
 
-  Future<Tx> beginTransaction();
+  Rows queryPrepared(PreparedQuery query, List<dynamic> params,
+      {String queryName});
 
-  Future<void> close();
-}
-
-abstract class Tx implements Querier {
-  Future<dynamic> commit();
-
-  Future<dynamic> rollback();
+  Future<void> releasePrepared(PreparedQuery query);
 }
 
 abstract class Connection implements Querier {
@@ -58,12 +53,16 @@ abstract class Connection implements Querier {
 
   String get connectionName;
 
-  Rows queryPrepared(PreparedQuery query, List params, {String queryName});
-
   static Future<Connection> connect(ConnSettings settings,
-          {String connectionName, Logger logger}) =>
+          {String connectionName,
+          Logger logger,
+          IdGenerator queryIdGenerator}) =>
       ConnectionImpl.connect(settings,
-          connectionName: connectionName, logger: logger);
+          connectionName: connectionName,
+          logger: logger,
+          queryIdGenerator: queryIdGenerator);
+
+  Future<void> close();
 }
 
 class CommandTag {
@@ -87,30 +86,44 @@ class Rows extends StreamView<Row> {
   Rows(Stream<Row> rows, this.finished) : super(rows);
 }
 
-class PreparedQuery {
+abstract class PreparedQuery {
+  String get name;
+
+  UnmodifiableListView<int> get paramOIDs;
+
+  UnmodifiableListView<FieldDescription> get fieldDescriptions;
+
+  Rows execute(List<dynamic> values);
+
+  Future<void> release();
+}
+
+class PreparedQueryImpl implements PreparedQuery {
+  @override
   final String name;
 
+  @override
   final UnmodifiableListView<int> paramOIDs;
 
+  @override
   final UnmodifiableListView<FieldDescription> fieldDescriptions;
 
-  final Connection _conn;
+  final Querier connection;
 
-  PreparedQuery(this._conn, this.name, this.paramOIDs, this.fieldDescriptions);
+  PreparedQueryImpl(
+      this.connection, this.name, this.paramOIDs, this.fieldDescriptions);
 
-  Future<Rows> execute(List<dynamic> values) async {
-    // TODO check if closed
-
-    // TODO
+  @override
+  Rows execute(List<dynamic> params, {String queryName}) {
+    return connection.queryPrepared(this, params, queryName: queryName);
   }
 
-  Future<void> release() async {
-    // TODO
+  @override
+  Future<void> release() {
+    return connection.releasePrepared(this);
   }
 
-  bool get isOpen {
-    // TODO
-  }
+// TODO isOpen
 }
 
 abstract class FormattedData {
@@ -135,4 +148,15 @@ class TextData extends FormattedData {
   final int type = 0;
 
   TextData(this.data);
+}
+
+class ConnectionStats {
+  final Duration averageQueryDuration;
+
+  final Duration maxQueryDuration;
+
+  final int numQueries;
+
+  ConnectionStats(
+      this.averageQueryDuration, this.maxQueryDuration, this.numQueries);
 }

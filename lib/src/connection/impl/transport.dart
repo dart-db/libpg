@@ -17,6 +17,7 @@ import 'package:libpg/src/message/authreq.dart';
 import 'package:libpg/src/message/backendkey.dart';
 import 'package:libpg/src/message/error_response.dart';
 import 'package:libpg/src/message/message_header.dart';
+import 'package:libpg/src/message/message_type.dart';
 import 'package:libpg/src/message/parameter_description.dart';
 import 'package:libpg/src/message/parameter_status.dart';
 import 'package:libpg/src/message/parse.dart';
@@ -27,9 +28,7 @@ import 'package:libpg/src/message/row_description.dart';
 import 'package:libpg/src/message/startup.dart';
 import 'package:libpg/src/message/terminate.dart';
 
-import '../message/message_type.dart';
-
-class ConnectionImpl implements Connection {
+class Protocol {
   final Socket _socket;
 
   @override
@@ -42,7 +41,7 @@ class ConnectionImpl implements Connection {
 
   _ConnState _state;
 
-  final _connected = Completer<ConnectionImpl>();
+  final _connected = Completer<Connection>();
 
   DateTime _connectedAt;
 
@@ -125,7 +124,7 @@ class ConnectionImpl implements Connection {
     final messageName = MessageType.name[_curMsgHeader.messageType];
     _log(LogMessage(
         message:
-            'Received backend message with type ${_curMsgHeader.messageType} (${String.fromCharCode(_curMsgHeader.messageType)}: ${messageName != null ? '$messageName' : ''})',
+        'Received backend message with type ${_curMsgHeader.messageType} (${String.fromCharCode(_curMsgHeader.messageType)}: ${messageName != null ? '$messageName' : ''})',
         connectionId: connectionId,
         connectionName: connectionName));
     switch (_curMsgHeader.messageType) {
@@ -145,7 +144,7 @@ class ConnectionImpl implements Connection {
         _handleReadyForQueryMsg();
         break;
       case MessageType.noData:
-        // TODO
+      // TODO
         break;
       case MessageType.bindComplete:
         _handleBindCompleteMsg();
@@ -302,7 +301,7 @@ class ConnectionImpl implements Connection {
         queryName: _currentQuery.queryName,
         queryId: _currentQuery.queryId,
         message:
-            'Received row description with field count ${msg.fieldCount}'));
+        'Received row description with field count ${msg.fieldCount}'));
     if (_currentQuery is SimpleQueryEntry) {
       (_currentQuery as SimpleQueryEntry).setFieldsDescription(msg.fields);
     } else if (_currentQuery is ParseEntry) {
@@ -451,7 +450,7 @@ class ConnectionImpl implements Connection {
     final parseMsg = ParseMessage(query.statement,
         name: query.statementName, paramOIDs: query.paramOIDs);
     final describeMsg =
-        DescribeMessage(DescribeMessage.statementType, query.statementName);
+    DescribeMessage(DescribeMessage.statementType, query.statementName);
     final syncMsg = SyncMessage();
 
     _socket.add(parseMsg.build());
@@ -503,90 +502,7 @@ class ConnectionImpl implements Connection {
     // TODO
   }
 
-  @override
-  Rows query(String sql, {String queryName}) {
-    final queryId = _queryIdGenerator.get;
-    final entry = SimpleQueryEntry(sql,
-        queryId: queryId, queryName: queryName ?? queryId);
-    _enqueueQuery(entry, queryName: queryName);
-    return Rows(entry.stream.cast<Row>(), entry.onFinish);
-  }
-
-  @override
-  Future<CommandTag> execute(String sql,
-      {String queryName, List<dynamic> values}) async {
-    final rows = query(sql, queryName: queryName);
-    return rows.finished;
-  }
-
-  @override
-  Future<PreparedQuery> prepare(String query,
-      {String statementName = '',
-      String queryName,
-      List<int> paramOIDs = const []}) async {
-    final entry = ParseEntry(this, query,
-        statementName: statementName,
-        paramOIDs: paramOIDs,
-        queryId: _queryIdGenerator.get,
-        queryName: queryName);
-    _enqueueQuery(entry);
-    return entry.future;
-  }
-
   final _prepared = <PreparedQuery>{};
-
-  @override
-  Rows queryPrepared(PreparedQuery query, List<dynamic> params,
-      {String queryName}) {
-    dynamic paramFormats = List<int>.filled(params.length, 1);
-    int i = -1;
-    bool hasTextFormat = false;
-    params = params.map<List<int>>((p) {
-      i++;
-      if (p is TextData) {
-        hasTextFormat = true;
-        paramFormats[i] = 0;
-        return p.data;
-      } else if (p is ToSql) {
-        hasTextFormat = true;
-        paramFormats[i] = 0;
-        return utf8.encode(p.toSql());
-      } else if (p is BinaryData) {
-        return p.data;
-      } else if (p is ToPGBinary) {
-        return p.toPGBinary();
-      } else {
-        final data = encode(p);
-        if (data.type == 0) {
-          hasTextFormat = true;
-          paramFormats[i] = 0;
-        }
-        return data.data;
-      }
-    }).toList();
-    if (!hasTextFormat) {
-      paramFormats = 1;
-    }
-    final entry = ExtendedQueryEntry(
-      query,
-      params,
-      queryId: _queryIdGenerator.get,
-      queryName: queryName,
-      paramFormats: paramFormats,
-    );
-    _enqueueQuery(entry);
-    return Rows(entry.stream, entry.onFinish);
-  }
-
-  @override
-  Future<void> releasePrepared(PreparedQuery query, {String queryName}) {
-    final entry = ClosePreparedEntry(
-        CloseMessage(query.name, type: CloseType.preparedStatement),
-        queryId: _queryIdGenerator.get,
-        queryName: queryName);
-    _enqueueQuery(entry);
-    return entry.onFinish;
-  }
 
   @override
   Future<void> close() async {
@@ -627,8 +543,8 @@ class ConnectionImpl implements Connection {
 
   static Future<ConnectionImpl> connect(ConnSettings settings,
       {String connectionName,
-      Logger logger,
-      IdGenerator queryIdGenerator}) async {
+        Logger logger,
+        IdGenerator queryIdGenerator}) async {
     Socket socket = await Socket.connect(settings.hostname, settings.port);
 
     // TODO ssl

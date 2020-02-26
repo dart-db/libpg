@@ -144,3 +144,29 @@ class SyncMessage {
     return buffer.data;
   }
 }
+
+enum CloseType { preparedStatement, portal }
+
+class CloseMessage {
+  final CloseType type;
+
+  final String name;
+
+  CloseMessage(this.name, {this.type = CloseType.preparedStatement});
+
+  List<int> build() {
+    final buffer = WriteBuffer();
+
+    buffer.addByte(MessageType.close);
+    buffer.addInt32(0);
+    if(type == CloseType.preparedStatement) {
+      buffer.addByte(DescribeMessage.statementType);
+    } else {
+      buffer.addByte(DescribeMessage.portalType);
+    }
+    buffer.addUtf8String(name);
+    buffer.setLength();
+
+    return buffer.data;
+  }
+}

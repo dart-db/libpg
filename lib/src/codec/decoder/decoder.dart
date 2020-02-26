@@ -5,7 +5,7 @@ import 'package:libpg/src/buffer/read_buffer.dart';
 import 'package:libpg/src/codec/decoder/interval.dart';
 import 'package:libpg/src/codec/decoder/parser/parser.dart';
 import 'package:libpg/src/codec/decoder/timestamp.dart';
-import 'package:libpg/src/connection/query_entry.dart';
+import 'package:libpg/src/connection/query_queue_entry/query_entry.dart';
 import 'package:libpg/src/message/row_description.dart';
 
 dynamic decode(final FieldDescription description, List<int> data) {

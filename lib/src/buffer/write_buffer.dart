@@ -45,7 +45,6 @@ class WriteBuffer {
   }
 
   void addInt64(int i) {
-    // TODO assert(i >= -2147483648 && i <= 2147483647);
 
     int a = (i >> 56) & 0x000000FF;
     int b = (i >> 48) & 0x000000FF;
