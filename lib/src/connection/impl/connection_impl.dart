@@ -9,7 +9,7 @@ import 'package:crypto/crypto.dart';
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/buffer/read_buffer.dart';
 import 'package:libpg/src/codec/encode/encode.dart';
-import 'package:libpg/src/connection/query_queue_entry/query_entry.dart';
+import 'query_queue_entry/query_entry.dart';
 import 'package:libpg/src/connection/row.dart';
 import 'package:libpg/src/id/generator.dart';
 import 'package:libpg/src/logger/logger.dart';
@@ -27,7 +27,7 @@ import 'package:libpg/src/message/row_description.dart';
 import 'package:libpg/src/message/startup.dart';
 import 'package:libpg/src/message/terminate.dart';
 
-import '../message/message_type.dart';
+import 'package:libpg/src/message/message_type.dart';
 
 class ConnectionImpl implements Connection {
   final Socket _socket;
@@ -557,7 +557,7 @@ class ConnectionImpl implements Connection {
         return p.toPGBinary();
       } else {
         final data = encode(p);
-        if (data.type == 0) {
+        if (data.format == 0) {
           hasTextFormat = true;
           paramFormats[i] = 0;
         }

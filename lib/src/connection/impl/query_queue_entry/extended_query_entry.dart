@@ -2,58 +2,55 @@ import 'dart:async';
 
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/codec/decoder/decoder.dart';
-import 'package:libpg/src/connection/query_queue_entry/query_entry.dart';
+import 'query_entry.dart';
 import 'package:libpg/src/connection/row.dart';
+import 'package:libpg/src/exception/postgres_server.dart';
+import 'package:libpg/src/message/error_response.dart';
 import 'package:libpg/src/message/row_data.dart';
 import 'package:libpg/src/message/row_description.dart';
 
-class SimpleQueryEntry implements QueueEntry {
-  final String statement;
-
-  final DateTime startedAt;
-
+class ExtendedQueryEntry implements QueueEntry {
   @override
   final String queryId;
 
   @override
   final String queryName;
 
+  final List<dynamic> params;
+
+  final PreparedQuery query;
+
   final _completer = Completer<CommandTag>();
 
   final _controller = StreamController<Row>();
 
-  List<FieldDescription> _fields;
+  final dynamic paramFormats;
 
   CommandTag _commandTag;
 
   dynamic _error;
 
-  SimpleQueryEntry(this.statement,
-      {DateTime startedAt, this.queryId, this.queryName})
-      : startedAt = startedAt ?? DateTime.now();
+  ExtendedQueryEntry(this.query, this.params,
+      {this.paramFormats, this.queryId, this.queryName});
 
   Stream<Row> get stream => _controller.stream;
 
-  Future<CommandTag> get onFinish => _completer.future;
+  List<FieldDescription> get fieldDescriptions => query.fieldDescriptions;
 
-  List<FieldDescription> get fieldDescriptions => _fields;
-
-  void setFieldsDescription(List<FieldDescription> fields) {
-    _fields = fields;
-  }
-
-  int get fieldCount => _fields.length;
+  int get fieldCount => fieldDescriptions.length;
 
   CommandTag get commandTag => _commandTag;
 
+  Future<CommandTag> get onFinish => _completer.future;
+
   void addRow(RowData rowData) {
-    final values = List<dynamic>(_fields.length);
-    final columns = List<Column>(_fields.length);
+    final values = List<dynamic>(fieldDescriptions.length);
+    final columns = List<Column>(fieldDescriptions.length);
     final columnsMap = <String, Column>{};
     final map = <String, dynamic>{};
 
-    for (int i = 0; i < _fields.length; i++) {
-      final description = _fields[i];
+    for (int i = 0; i < fieldDescriptions.length; i++) {
+      final description = fieldDescriptions[i];
       final data = rowData[i];
 
       final value = decode(description, data);
@@ -77,6 +74,13 @@ class SimpleQueryEntry implements QueueEntry {
 
   @override
   void addError(error, [StackTrace trace]) {
+    if (error is ErrorResponse) {
+      if (error.code == ErrorResponseCode.invalidSqlStatementName) {
+        error = PreparedStatementNotExists(error, query.name);
+      } else {
+        error = PgServerException(error);
+      }
+    }
     _error ??= error;
     if (!_controller.isClosed) {
       _controller.addError(error, trace);

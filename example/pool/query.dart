@@ -13,15 +13,14 @@ Future<void> main() async {
     logger: log,
   );
 
-  final st = await pool.prepare(r'SELECT * FROM tint2 LIMIT $1',
-      statementName: 'query_tint2');
-
+  // Query
   final row1 = await pool.query('SELECT 1');
-  await row1.finished;
-  final row2 = await pool.query('SELECT 2');
-  await row2.finished;
-  final row3 = await pool.query('SELECT 3');
-  await row3.finished;
+  print(await row1.toList());
 
+  // Execute
+  final row2 = await pool.query("update person set name='Mark' where id = 1");
+  print(await row2.finished);
+
+  // Release all connections in the pool
   await pool.close();
 }

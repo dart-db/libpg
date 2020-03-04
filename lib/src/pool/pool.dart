@@ -10,8 +10,18 @@ import 'package:libpg/src/message/row_description.dart';
 import 'package:pedantic/pedantic.dart';
 
 abstract class PGPool implements Querier {
-  factory PGPool(ConnSettings settings, {Logger logger}) =>
-      _PGPoolImpl(settings, logger: logger);
+  factory PGPool(ConnSettings settings,
+          {Logger logger,
+          int maxConnections,
+          int maxIdleConnections,
+          Duration idleConnectionTimeout,
+          Duration connectionReuseTimeout}) =>
+      _PGPoolImpl(settings,
+          logger: logger,
+          maxConnections: maxConnections,
+          maxIdleConnections: maxIdleConnections,
+          idleConnectionTimeout: idleConnectionTimeout,
+          connectionReuseTimeout: connectionReuseTimeout);
 
   set maxConnections(int value);
 
@@ -58,16 +68,27 @@ class _PGPoolImpl implements PGPool {
 
   final IdGenerator _queryIdGenerator;
 
-  _PGPoolImpl(this.settings, {Logger logger, IdGenerator queryIdGenerator})
+  _PGPoolImpl(this.settings,
+      {Logger logger,
+      IdGenerator queryIdGenerator,
+      int maxConnections,
+      int maxIdleConnections,
+      Duration idleConnectionTimeout,
+      Duration connectionReuseTimeout})
       : _logger = logger ?? nopLogger,
-        _queryIdGenerator = queryIdGenerator ?? IdGenerator(prefix: 'query');
+        _queryIdGenerator = queryIdGenerator ?? IdGenerator(prefix: 'query') {
+    this.maxConnections = maxConnections;
+    this.maxIdleConnections = maxIdleConnections;
+    this.idleConnectionTimeout = idleConnectionTimeout;
+    this.connectionReuseTimeout = connectionReuseTimeout;
+  }
 
   @override
   int get maxConnections => _maxConnections;
 
   @override
   set maxConnections(int value) {
-    if (value <= 0) value = null;
+    if (value != null && value <= 0) value = null;
     _maxConnections = value;
 
     _whenExceedMaxConnections();
@@ -78,7 +99,7 @@ class _PGPoolImpl implements PGPool {
 
   @override
   set maxIdleConnections(int value) {
-    if (value <= 0) value = null;
+    if (value != null && value <= 0) value = null;
 
     _maxIdleConnections = value;
 
@@ -88,12 +109,16 @@ class _PGPoolImpl implements PGPool {
   Duration get idleConnectionTimeout => _idleConnectionTimeout;
 
   set idleConnectionTimeout(Duration value) {
+    if (value != null && value.isNegative) value = null;
+
     _idleConnectionTimeout = value;
   }
 
   Duration get connectionReuseTimeout => _connectionReuseTimeout;
 
   set connectionReuseTimeout(Duration value) {
+    if (value != null && value.isNegative) value = null;
+
     _connectionReuseTimeout = value;
   }
 
@@ -130,7 +155,6 @@ class _PGPoolImpl implements PGPool {
         controller.addError(e, s);
         completer.completeError(e, s);
       }
-      unawaited(_releaseConnectionToPool(connection));
     });
     return Rows(controller.stream, completer.future);
   }
@@ -266,10 +290,34 @@ class _PGPoolImpl implements PGPool {
     return _Connection(this, connection);
   }
 
+  Future<void> _getConnectionSequencer;
+
   Future<Connection> _getConnection() async {
+    while (_getConnectionSequencer != null) {
+      await _getConnectionSequencer;
+    }
+
+    final completer = Completer<void>();
+
+    _getConnectionSequencer = completer.future;
+
+    try {
+      final ret = await _getConnectionInner();
+      completer.complete();
+      _getConnectionSequencer = null;
+      return ret;
+    } catch (_) {
+      completer.complete();
+      _getConnectionSequencer = null;
+      rethrow;
+    }
+  }
+
+  Future<Connection> _getConnectionInner() async {
     if (_idleConnections.isEmpty) {
       if (_maxConnections == null || _connections.length < _maxConnections) {
         final connection = await createConnection(logger: _logger);
+        _poolStats.totalConnectionsMade++;
 
         _logger(LogMessage(
             connectionName: connection.connectionName,
@@ -482,7 +530,7 @@ class _PGPoolImpl implements PGPool {
     }
   }
 
-  _PoolStats _poolStats;
+  final _poolStats = _PoolStats();
 
   @override
   PoolStats get poolStats =>

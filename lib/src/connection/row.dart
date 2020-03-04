@@ -71,5 +71,6 @@ class Row {
 
   Map<String, Column> asColumns() => _columnsMap;
 
-  String toString() => _values.join(', ');
+  @override
+  String toString() => '(' + _values.join(', ') + ')';
 }

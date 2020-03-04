@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:collection';
+import 'dart:convert';
 
 import 'package:libpg/libpg.dart';
-import 'package:libpg/src/connection/connection_impl.dart';
+import 'package:libpg/src/connection/impl/connection_impl.dart';
 import 'package:libpg/src/connection/row.dart';
 import 'package:libpg/src/id/generator.dart';
 import 'package:libpg/src/logger/logger.dart';
@@ -78,12 +79,26 @@ class CommandTag {
     final parts = tag.split(' ');
     return CommandTag(parts.first, tag, int.tryParse(parts.last));
   }
+
+  @override
+  String toString() => 'CommandTag(tag: $tag, rowsAffected: $rowsAffected)';
 }
 
 class Rows extends StreamView<Row> {
   final Future<CommandTag> finished;
 
   Rows(Stream<Row> rows, this.finished) : super(rows);
+
+  Future<Row> one() async {
+    try {
+      return await first;
+    } on StateError catch(e) {
+      if(e.message == 'No element') {
+        return null;
+      }
+      rethrow;
+    }
+  }
 }
 
 abstract class PreparedQuery {
@@ -127,7 +142,7 @@ class PreparedQueryImpl implements PreparedQuery {
 }
 
 abstract class FormattedData {
-  int get type;
+  int get format;
 
   List<int> get data;
 }
@@ -136,7 +151,7 @@ class BinaryData extends FormattedData {
   final List<int> data;
 
   @override
-  final int type = 1;
+  final int format = 1;
 
   BinaryData(this.data);
 }
@@ -145,9 +160,12 @@ class TextData extends FormattedData {
   final List<int> data;
 
   @override
-  final int type = 0;
+  final int format = 0;
 
   TextData(this.data);
+
+  @override
+  String toString() => utf8.decode(data);
 }
 
 class ConnectionStats {

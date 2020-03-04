@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:libpg/libpg.dart';
-import 'package:libpg/src/connection/query_queue_entry/query_entry.dart';
+import 'query_entry.dart';
 import 'package:libpg/src/message/row_description.dart';
 
 class ParseEntry implements QueueEntry {

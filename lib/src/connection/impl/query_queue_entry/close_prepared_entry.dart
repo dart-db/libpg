@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:libpg/src/connection/query_queue_entry/query_entry.dart';
+import 'query_entry.dart';
 import 'package:libpg/src/message/parse.dart';
 
 class ClosePreparedEntry implements QueueEntry {
