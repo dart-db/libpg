@@ -27,6 +27,44 @@ class ConnSettings {
     this.password,
     this.timezone,
   });
+
+  factory ConnSettings.parse(/* String | Uri */ url, {String timezone}) {
+    Uri uri;
+    if (url is String) {
+      uri = Uri.tryParse(url);
+      if (uri == null) {
+        throw Exception("Invalid url");
+      }
+    } else if (url is Uri) {
+      uri = url;
+    } else if (url == null) {
+      throw Exception("url cannot be null");
+    } else {
+      throw Exception("unknown url type");
+    }
+
+    String username;
+    String password;
+
+    {
+      final userInfoParts = uri.userInfo.split(':');
+      if (userInfoParts.isNotEmpty) username = userInfoParts.first;
+      if (userInfoParts.length > 2) password = userInfoParts[1];
+    }
+    String databaseName = 'postgres';
+    if(uri.pathSegments.isNotEmpty) {
+      databaseName = uri.pathSegments.first;
+    }
+
+    return ConnSettings(
+      hostname: uri.host,
+      port: uri.port,
+      username: username,
+      password: password,
+      databaseName: databaseName,
+      timezone: timezone,
+    );
+  }
 }
 
 void nopLogger(LogMessage msg) {}
@@ -92,8 +130,8 @@ class Rows extends StreamView<Row> {
   Future<Row> one() async {
     try {
       return await first;
-    } on StateError catch(e) {
-      if(e.message == 'No element') {
+    } on StateError catch (e) {
+      if (e.message == 'No element') {
         return null;
       }
       rethrow;
