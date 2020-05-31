@@ -63,6 +63,8 @@ class Row {
   void forEach(void Function(String name, dynamic value) function) =>
       asMap().forEach(function);
 
+  Iterator<dynamic> get iterator => _values.iterator;
+
   List<dynamic> toList() => _values;
 
   Map<String, dynamic> asMap() => _map;
