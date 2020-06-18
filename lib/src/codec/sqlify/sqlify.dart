@@ -1,10 +1,10 @@
-abstract class ToSql {
-  String toSql();
+abstract class ToPgSql {
+  String toPgSql();
 }
 
 String sqlify(dynamic value, {String quote = "'"}) {
   if (value == null) return 'null';
-  if (value is ToSql) return value.toSql();
+  if (value is ToPgSql) return value.toPgSql();
 
   switch (value.runtimeType) {
     case String:
@@ -17,10 +17,10 @@ String sqlify(dynamic value, {String quote = "'"}) {
     case Duration:
       return intervalToSql(value);
     default:
-      if(value is ToPGRecord) {
+      if (value is ToPGRecord) {
         return recordToSql(value);
       }
-      if(value is List) {
+      if (value is List) {
         return arrayToSql(value);
       }
       throw Exception('${value.runtimeType} cannot be sqlified');
@@ -92,9 +92,9 @@ String intervalToSqlVerbose(Duration value) {
 
 String arrayToSql(List list) {
   final sb = StringBuffer('{');
-  for(int i = 0; i < list.length; i++) {
-    sb.write(sqlify(list[i], quote: '"')??'NULL');
-    if(i < list.length - 1) sb.write(',');
+  for (int i = 0; i < list.length; i++) {
+    sb.write(sqlify(list[i], quote: '"') ?? 'NULL');
+    if (i < list.length - 1) sb.write(',');
   }
   sb.write('}');
   return sb.toString();
@@ -103,9 +103,9 @@ String arrayToSql(List list) {
 String recordToSql(ToPGRecord record) {
   List list = record.toPGRecord();
   final sb = StringBuffer('(');
-  for(int i = 0; i < list.length; i++) {
-    sb.write(sqlify(list[i], quote: '"')??'NULL');
-    if(i < list.length - 1) sb.write(',');
+  for (int i = 0; i < list.length; i++) {
+    sb.write(sqlify(list[i], quote: '"') ?? 'NULL');
+    if (i < list.length - 1) sb.write(',');
   }
   sb.write(')');
   return sb.toString();

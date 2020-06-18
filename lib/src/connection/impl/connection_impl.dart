@@ -547,10 +547,10 @@ class ConnectionImpl implements Connection {
         hasTextFormat = true;
         paramFormats[i] = 0;
         return p.data;
-      } else if (p is ToSql) {
+      } else if (p is ToPgSql) {
         hasTextFormat = true;
         paramFormats[i] = 0;
-        return utf8.encode(p.toSql());
+        return utf8.encode(p.toPgSql());
       } else if (p is BinaryData) {
         return p.data;
       } else if (p is ToPGBinary) {

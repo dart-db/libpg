@@ -15,7 +15,7 @@ dynamic decode(final FieldDescription description, List<int> data) {
       try {
         return _decodeText(
             description, String.fromCharCodes(data)); // TODO encoding
-      } catch(e) {
+      } catch (e) {
         return TextData(data);
       }
       break;

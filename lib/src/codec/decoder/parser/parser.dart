@@ -25,7 +25,7 @@ class StringReader {
   }
 
   bool substringIfStartsWith(String pattern) {
-    if(!_string.startsWith(pattern)) {
+    if (!_string.startsWith(pattern)) {
       return false;
     }
     _string.substring(pattern.length);
@@ -33,12 +33,10 @@ class StringReader {
   }
 }
 
-
-
 dynamic parse(dynamic _input) {
   if (_input is! StringReader) _input = StringReader(string: _input);
   final StringReader input = _input;
-  if(input.startsWith('null')) {
+  if (input.startsWith('null')) {
     return null;
   } else if (input.startsWith('{')) {
     return _parseArray(input);
@@ -50,17 +48,17 @@ dynamic parse(dynamic _input) {
 
   {
     final ret = _parseFloat(input);
-    if(ret != null) return ret;
+    if (ret != null) return ret;
   }
 
   {
     final ret = _parseInt(input);
-    if(ret != null) return ret;
+    if (ret != null) return ret;
   }
 
   {
     final ret = _parseUnquotedString(input);
-    if(ret != null) return ret;
+    if (ret != null) return ret;
   }
 
   throw CannotDecode();
@@ -78,12 +76,12 @@ List<dynamic> _parseArray(dynamic _input) {
       break;
     }
 
-    if(input.substringIfStartsWith(',')) {
+    if (input.substringIfStartsWith(',')) {
       ret.add(null);
       continue;
     }
     ret.add(parse(input));
-    if(input.substringIfStartsWith(',')) {
+    if (input.substringIfStartsWith(',')) {
       input.substring(1);
     }
   }
@@ -103,12 +101,12 @@ Map<String, dynamic> _parseRecord(dynamic _input) {
       break;
     }
 
-    if(input.substringIfStartsWith(',')) {
+    if (input.substringIfStartsWith(',')) {
       ret['f$i'] = null;
       continue;
     }
     ret['f$i'] = parse(input);
-    if(input.substringIfStartsWith(',')) {
+    if (input.substringIfStartsWith(',')) {
       input.substring(1);
     }
   }
@@ -122,7 +120,7 @@ String _parseString(dynamic _input) {
   final regExp = RegExp(r'^"((\\"|""|[^"])*)"');
   final match = regExp.firstMatch(input.string);
 
-  if(match == null) throw Exception();
+  if (match == null) throw Exception();
   final ret = match.group(1);
   input.substring(ret.length + 2);
   return ret.replaceAll('""', '"');
@@ -135,7 +133,7 @@ int _parseInt(dynamic _input) {
   final regExp = RegExp('^([+-]?[0-9]+)');
   final match = regExp.firstMatch(input.string);
 
-  if(match == null) return null;
+  if (match == null) return null;
   final ret = match.group(1);
   input.substring(ret.length);
   return int.parse(ret);
@@ -149,7 +147,7 @@ double _parseFloat(dynamic _input) {
   // TODO exponential form
   final match = regExp.firstMatch(input.string);
 
-  if(match == null) return null;
+  if (match == null) return null;
   final ret = match.group(1);
   input.substring(ret.length);
   return double.parse(ret);
@@ -162,7 +160,7 @@ String _parseUnquotedString(dynamic _input) {
   final regExp = RegExp(r'^([^,\}\)]+)');
   final match = regExp.firstMatch(input.string);
 
-  if(match == null) return null;
+  if (match == null) return null;
   final ret = match.group(1);
   input.substring(ret.length);
 

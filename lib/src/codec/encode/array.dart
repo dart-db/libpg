@@ -23,7 +23,7 @@ class ArrayHeader {
     buffer.addInt32(containsNull ? 1 : 0);
     buffer.addInt32(elementOID);
 
-    for(int i = 0; i < dimensions.length; i++) {
+    for (int i = 0; i < dimensions.length; i++) {
       final dimension = dimensions[i];
       buffer.addInt32(dimension.length);
       buffer.addInt32(dimension.lowerBound);

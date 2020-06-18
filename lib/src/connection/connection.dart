@@ -52,7 +52,7 @@ class ConnSettings {
       if (userInfoParts.length > 2) password = userInfoParts[1];
     }
     String databaseName = 'postgres';
-    if(uri.pathSegments.isNotEmpty) {
+    if (uri.pathSegments.isNotEmpty) {
       databaseName = uri.pathSegments.first;
     }
 

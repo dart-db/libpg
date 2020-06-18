@@ -45,7 +45,6 @@ class WriteBuffer {
   }
 
   void addInt64(int i) {
-
     int a = (i >> 56) & 0x000000FF;
     int b = (i >> 48) & 0x000000FF;
     int c = (i >> 40) & 0x000000FF;

@@ -30,9 +30,9 @@ class ParseEntry implements QueueEntry {
 
   ParseEntry(this.connection, this.statement,
       {this.statementName = '',
-        this.paramOIDs = const [],
-        this.queryId,
-        this.queryName});
+      this.paramOIDs = const [],
+      this.queryId,
+      this.queryName});
 
   Future<PreparedQuery> get future => _completer.future;
 

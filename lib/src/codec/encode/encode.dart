@@ -14,7 +14,7 @@ FormattedData encode(dynamic value) {
   if (value is List) {
     return TextData(utf8.encode(arrayToSql(value)));
   }
-  if(value is ToPGRecord) {
+  if (value is ToPGRecord) {
     return TextData(utf8.encode(recordToSql(value)));
   }
   throw Exception('Unknown type');

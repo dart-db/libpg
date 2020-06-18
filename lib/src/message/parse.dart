@@ -159,7 +159,7 @@ class CloseMessage {
 
     buffer.addByte(MessageType.close);
     buffer.addInt32(0);
-    if(type == CloseType.preparedStatement) {
+    if (type == CloseType.preparedStatement) {
       buffer.addByte(DescribeMessage.statementType);
     } else {
       buffer.addByte(DescribeMessage.portalType);
