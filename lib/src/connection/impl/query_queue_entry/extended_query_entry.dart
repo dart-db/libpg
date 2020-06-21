@@ -28,7 +28,7 @@ class ExtendedQueryEntry implements QueueEntry {
 
   CommandTag _commandTag;
 
-  dynamic _error;
+  List<dynamic> _error = <dynamic>[];
 
   ExtendedQueryEntry(this.query, this.params,
       {this.paramFormats, this.queryId, this.queryName});
@@ -81,11 +81,10 @@ class ExtendedQueryEntry implements QueueEntry {
         error = PgServerException(error);
       }
     }
-    _error ??= error;
+    _error.add(error);
     if (!_controller.isClosed) {
       _controller.addError(error, trace);
     }
-    _completer.completeError(error, trace); // TODO should we do this?
   }
 
   void setCommandTag(CommandTag tag) {
@@ -94,10 +93,13 @@ class ExtendedQueryEntry implements QueueEntry {
 
   void finish() {
     _controller.close();
-    if (_error == null) {
+
+    if (_commandTag != null) {
       _completer.complete(_commandTag);
+    } else if (_error.isNotEmpty) {
+      _completer.completeError(_error.toList());
     } else {
-      _completer.completeError(_error);
+      _completer.completeError('command tag not received');
     }
   }
 }

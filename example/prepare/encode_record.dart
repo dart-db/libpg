@@ -11,7 +11,7 @@ class Custom implements ToPGRecord {
   Custom(this.num, this.name);
 
   @override
-  List toPGRecord() => [num, name];
+  PGRecord toPGRecord() => PGRecord([num, name]);
 }
 
 Future<void> main() async {

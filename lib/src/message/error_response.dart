@@ -160,5 +160,6 @@ class ErrorResponse {
 }
 
 abstract class ErrorResponseCode {
+  static const uniqueViolation = "23505";
   static const invalidSqlStatementName = "26000";
 }

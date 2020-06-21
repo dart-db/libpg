@@ -6,6 +6,9 @@ abstract class MessageType {
   /// Represents character 'E'
   static const errorResponse = 69;
 
+  /// Represents character 'N'
+  static const noticeResponse = 78;
+
   /// Authentication request message type sent by the backend.
   /// Represents character 'R'
   static const authRequest = 82;
@@ -80,9 +83,11 @@ abstract class MessageType {
     rowDescription: 'Row description',
     rowData: 'Row data',
     commandComplete: 'Command complete',
-    parseComplete: 'Prase complete',
+    parseComplete: 'Parse complete',
     parameterDescription: 'Parameter description',
-    closeComplete: 'Close complete'
+    closeComplete: 'Close complete',
+    errorResponse: 'Error response',
+    noticeResponse: 'Notice response',
   };
 }
 

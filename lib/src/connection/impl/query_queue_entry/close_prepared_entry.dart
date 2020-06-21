@@ -18,7 +18,9 @@ class ClosePreparedEntry implements QueueEntry {
 
   @override
   void addError(error, [StackTrace trace]) {
-    _completer.completeError(error, trace);
+    if (!_completer.isCompleted) {
+      _completer.completeError(error, trace);
+    }
   }
 
   void finish() {

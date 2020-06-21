@@ -54,7 +54,9 @@ class Row {
       return _values[index];
     } else if (index is String) {
       index = (index as String).toLowerCase();
-      if (!_map.containsKey(index)) throw Exception('Index does not exist');
+      if (!_map.containsKey(index)) {
+        throw Exception('Index does not exist: $index');
+      }
       return _map[index];
     }
 

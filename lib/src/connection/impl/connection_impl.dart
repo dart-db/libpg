@@ -169,6 +169,9 @@ class ConnectionImpl implements Connection {
       case MessageType.errorResponse:
         _handleErrorResponseMsg();
         break;
+      case MessageType.noticeResponse:
+        _handleErrorResponseMsg();
+        break;
       default:
         throw Exception(
             'Unknown message type (${_curMsgHeader.messageType}) received');
@@ -256,7 +259,9 @@ class ConnectionImpl implements Connection {
         queryEntry.finish();
       } else if (queryEntry is ParseEntry) {
         final prepared = queryEntry.complete();
-        _prepared.add(prepared);
+        if (_prepared != null) {
+          _prepared.add(prepared);
+        }
       } else if (queryEntry is ExtendedQueryEntry) {
         queryEntry.finish();
       }
@@ -368,10 +373,8 @@ class ConnectionImpl implements Connection {
 
     if (_currentQuery != null) {
       _currentQuery.addError(msg);
-      _removeCurrentQuery();
       return;
     }
-    // TODO
   }
 
   void _handleCloseCompleteMsg() {

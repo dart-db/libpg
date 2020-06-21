@@ -17,8 +17,11 @@ String sqlify(dynamic value, {String quote = "'"}) {
     case Duration:
       return intervalToSql(value);
     default:
-      if (value is ToPGRecord) {
+      if (value is PGRecord) {
         return recordToSql(value);
+      }
+      if (value is ToPGRecord) {
+        return recordToSql(value.toPGRecord());
       }
       if (value is List) {
         return arrayToSql(value);
@@ -100,8 +103,8 @@ String arrayToSql(List list) {
   return sb.toString();
 }
 
-String recordToSql(ToPGRecord record) {
-  List list = record.toPGRecord();
+String recordToSql(PGRecord record) {
+  final list = record.data;
   final sb = StringBuffer('(');
   for (int i = 0; i < list.length; i++) {
     sb.write(sqlify(list[i], quote: '"') ?? 'NULL');
@@ -112,5 +115,11 @@ String recordToSql(ToPGRecord record) {
 }
 
 abstract class ToPGRecord {
-  List<dynamic> toPGRecord();
+  PGRecord toPGRecord();
+}
+
+class PGRecord {
+  List<dynamic> data;
+
+  PGRecord(this.data);
 }

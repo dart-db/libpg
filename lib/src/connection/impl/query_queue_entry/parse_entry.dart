@@ -48,17 +48,23 @@ class ParseEntry implements QueueEntry {
   @override
   void addError(error, [StackTrace stack]) {
     state = ParseEntryState.error;
-    _completer.completeError(error, stack);
+    _error = error;
   }
 
   PreparedQuery complete() {
-    final result = PreparedQueryImpl(
-        connection,
-        statementName,
-        UnmodifiableListView(receivedParamOIDs),
-        UnmodifiableListView(_fieldDescription));
-    state = ParseEntryState.successful;
-    _completer.complete(result);
-    return result;
+    if (_error != null) {
+      final result = PreparedQueryImpl(
+          connection,
+          statementName,
+          UnmodifiableListView(receivedParamOIDs),
+          UnmodifiableListView(_fieldDescription));
+      state = ParseEntryState.successful;
+      _completer.complete(result);
+      return result;
+    }
+    _completer.completeError(_error);
+    return null;
   }
+
+  dynamic _error;
 }

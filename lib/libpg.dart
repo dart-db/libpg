@@ -6,6 +6,7 @@ library libpg;
 export 'src/connection/connection.dart';
 export 'src/pool/pool.dart';
 export 'src/logger/logger.dart';
+export 'src/message/error_response.dart';
 
 export 'src/substitute/substitute.dart';
 export 'src/codec/sqlify/sqlify.dart';

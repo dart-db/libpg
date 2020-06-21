@@ -26,7 +26,7 @@ class SimpleQueryEntry implements QueueEntry {
 
   CommandTag _commandTag;
 
-  dynamic _error;
+  final _error = <dynamic>[];
 
   SimpleQueryEntry(this.statement,
       {DateTime startedAt, this.queryId, this.queryName})
@@ -77,11 +77,10 @@ class SimpleQueryEntry implements QueueEntry {
 
   @override
   void addError(error, [StackTrace trace]) {
-    _error ??= error;
+    _error.add(error);
     if (!_controller.isClosed) {
       _controller.addError(error, trace);
     }
-    _completer.completeError(error, trace); // TODO should we do this?
   }
 
   void setCommandTag(CommandTag tag) {
@@ -90,10 +89,13 @@ class SimpleQueryEntry implements QueueEntry {
 
   void finish() {
     _controller.close();
-    if (_error == null) {
+
+    if (_commandTag != null) {
       _completer.complete(_commandTag);
+    } else if (_error.isNotEmpty) {
+      _completer.completeError(_error.toList());
     } else {
-      _completer.completeError(_error);
+      _completer.completeError('command tag not received');
     }
   }
 }
