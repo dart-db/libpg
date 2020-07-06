@@ -66,7 +66,6 @@ class ConnectionImpl implements Connection {
       print(e); // TODO log instead
       // TODO
     }, onDone: () {
-      print('done');
       // TODO
     });
 

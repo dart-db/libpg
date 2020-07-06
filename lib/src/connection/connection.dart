@@ -7,8 +7,9 @@ import 'package:libpg/src/connection/impl/connection_impl.dart';
 import 'package:libpg/src/connection/row.dart';
 import 'package:libpg/src/id/generator.dart';
 import 'package:libpg/src/logger/logger.dart';
-import 'package:libpg/src/message/error_response.dart';
 import 'package:libpg/src/message/row_description.dart';
+
+export 'row.dart';
 
 final connectionIdGenerator = IdGenerator(prefix: 'conn');
 
