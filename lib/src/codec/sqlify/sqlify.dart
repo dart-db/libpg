@@ -17,11 +17,19 @@ String sqlify(dynamic value, {String quote = "'"}) {
     case Duration:
       return intervalToSql(value);
     default:
-      if (value is PGRecord) {
-        return recordToSql(value);
-      }
-      if (value is ToPGRecord) {
-        return recordToSql(value.toPGRecord());
+      if (value is PGRecord || value is ToPGRecord) {
+        if (value is ToPGRecord) {
+          value = value.toPGRecord();
+        }
+        String x = recordToSql(value, quote: quote);
+        if (quote == "'") {
+          return x;
+        }
+
+        x = x.replaceAllMapped(RegExp(r'([^\\])"'), (m) {
+          return m.group(1) + r'\"';
+        });
+        return '\"$x\"';
       }
       if (value is List) {
         return arrayToSql(value);
@@ -94,20 +102,20 @@ String intervalToSqlVerbose(Duration value) {
 }
 
 String arrayToSql(List list) {
-  final sb = StringBuffer('{');
+  final sb = StringBuffer('\'{');
   for (int i = 0; i < list.length; i++) {
     sb.write(sqlify(list[i], quote: '"') ?? 'NULL');
     if (i < list.length - 1) sb.write(',');
   }
-  sb.write('}');
+  sb.write('}\'');
   return sb.toString();
 }
 
-String recordToSql(PGRecord record) {
+String recordToSql(PGRecord record, {String quote = "'"}) {
   final list = record.data;
   final sb = StringBuffer('(');
   for (int i = 0; i < list.length; i++) {
-    sb.write(sqlify(list[i], quote: '"') ?? 'NULL');
+    sb.write(sqlify(list[i], quote: quote) ?? 'NULL');
     if (i < list.length - 1) sb.write(',');
   }
   sb.write(')');
