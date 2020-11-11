@@ -16,6 +16,8 @@ String sqlify(dynamic value, {String quote = "'"}) {
       return timestampToSql(value);
     case Duration:
       return intervalToSql(value);
+    case bool:
+      return value? 'TRUE': 'FALSE';
     default:
       if (value is PGRecord || value is ToPGRecord) {
         if (value is ToPGRecord) {

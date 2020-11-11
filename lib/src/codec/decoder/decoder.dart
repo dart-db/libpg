@@ -52,6 +52,7 @@ dynamic _decodeText(final FieldDescription description, String data) {
     case OIDs.float8:
       return double.parse(data);
     case OIDs.text:
+    case OIDs.BPChar:
       return data;
     case OIDs.timestamp:
     case OIDs.timestamptz:
