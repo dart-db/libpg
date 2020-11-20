@@ -13,3 +13,4 @@ doc/api/
 
 .idea
 *.iml
+/example/scratch.dart

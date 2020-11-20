@@ -153,6 +153,26 @@ double _parseFloat(dynamic _input) {
   return double.parse(ret);
 }
 
+bool parseBool(String input) {
+  switch(input) {
+    case "t":
+    case "true":
+    case "yes":
+    case "on":
+    case "1":
+      return true;
+    case "f":
+    case "false":
+    case "no":
+    case "off":
+    case "0":
+    case "n":
+      return false;
+    default:
+      throw Exception("Unknown boolean value");
+  }
+}
+
 String _parseUnquotedString(dynamic _input) {
   if (_input is! StringReader) _input = StringReader(string: _input);
   final StringReader input = _input;

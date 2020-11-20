@@ -22,7 +22,7 @@ dynamic decode(final FieldDescription description, List<int> data) {
     case FormatType.binary:
       return _decodeBinary(description, data);
     default:
-      throw Exception('Unkown format type');
+      throw Exception('Unknown format type');
   }
 }
 
@@ -41,6 +41,8 @@ dynamic _decodeBinary(final FieldDescription description, List<int> data) {
 
 dynamic _decodeText(final FieldDescription description, String data) {
   switch (description.oid) {
+    case OIDs.bool:
+      return parseBool(data);
     case OIDs.int2:
       return int.parse(data);
     case OIDs.int4:
@@ -53,6 +55,7 @@ dynamic _decodeText(final FieldDescription description, String data) {
       return double.parse(data);
     case OIDs.text:
     case OIDs.BPChar:
+    case OIDs.varchar:
       return data;
     case OIDs.timestamp:
     case OIDs.timestamptz:
