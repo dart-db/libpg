@@ -11,10 +11,10 @@ import 'package:libpg/src/message/row_description.dart';
 
 class ExtendedQueryEntry implements QueueEntry {
   @override
-  final String queryId;
+  final String? queryId;
 
   @override
-  final String queryName;
+  final String? queryName;
 
   final List<dynamic> params;
 
@@ -26,9 +26,9 @@ class ExtendedQueryEntry implements QueueEntry {
 
   final dynamic paramFormats;
 
-  CommandTag _commandTag;
+  CommandTag? _commandTag;
 
-  List<dynamic> _error = <dynamic>[];
+  final _error = <dynamic>[];
 
   ExtendedQueryEntry(this.query, this.params,
       {this.paramFormats, this.queryId, this.queryName});
@@ -39,13 +39,13 @@ class ExtendedQueryEntry implements QueueEntry {
 
   int get fieldCount => fieldDescriptions.length;
 
-  CommandTag get commandTag => _commandTag;
+  CommandTag? get commandTag => _commandTag;
 
   Future<CommandTag> get onFinish => _completer.future;
 
   void addRow(RowData rowData) {
-    final values = List<dynamic>(fieldDescriptions.length);
-    final columns = List<Column>(fieldDescriptions.length);
+    final values = List<dynamic>.filled(fieldDescriptions.length, null);
+    final columns = List<Column?>.filled(fieldDescriptions.length, null);
     final columnsMap = <String, Column>{};
     final map = <String, dynamic>{};
 
@@ -69,11 +69,11 @@ class ExtendedQueryEntry implements QueueEntry {
       columnsMap[column.name] = column;
     }
 
-    _controller.add(Row(columns, columnsMap, values, map));
+    _controller.add(Row(columns.cast<Column>(), columnsMap, values, map));
   }
 
   @override
-  void addError(error, [StackTrace trace]) {
+  void addError(error, [StackTrace? trace]) {
     if (error is ErrorResponse) {
       if (error.code == ErrorResponseCode.invalidSqlStatementName) {
         error = PreparedStatementNotExists(error, query.name);

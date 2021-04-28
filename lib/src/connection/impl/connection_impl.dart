@@ -38,24 +38,24 @@ class ConnectionImpl implements Connection {
   @override
   final String connectionId;
 
-  String _connectionName;
+  String? _connectionName;
 
-  _ConnState _state;
+  _ConnState? _state;
 
   final _connected = Completer<ConnectionImpl>();
 
-  DateTime _connectedAt;
+  DateTime? _connectedAt;
 
   final Logger _logger;
 
   final _queryQueue = Queue<QueueEntry>();
 
-  QueueEntry _currentQuery;
+  QueueEntry? _currentQuery;
 
   final IdGenerator _queryIdGenerator;
 
   ConnectionImpl._(this._socket, this.settings,
-      {Logger logger, String connectionName, IdGenerator queryIdGenerator})
+      {Logger? logger, String? connectionName, IdGenerator? queryIdGenerator})
       : _logger = logger ?? nopLogger,
         connectionId = connectionIdGenerator.get,
         _queryIdGenerator = queryIdGenerator ?? IdGenerator(prefix: 'query') {
@@ -73,7 +73,7 @@ class ConnectionImpl implements Connection {
   }
 
   @override
-  String get connectionName => _connectionName;
+  String get connectionName => _connectionName!;
 
   void _sendStartupMessage() {
     if (_state != _ConnState.socketConnected) {
@@ -82,7 +82,7 @@ class ConnectionImpl implements Connection {
 
     final msg = StartupMessage(
         protocolVersion: _protocolVersion,
-        username: settings.username,
+        username: settings.username ?? '',
         databaseName: settings.databaseName,
         timezone: settings.timezone);
 
@@ -93,7 +93,7 @@ class ConnectionImpl implements Connection {
 
   final _buffer = ReadBuffer();
 
-  MessageHeader _curMsgHeader;
+  MessageHeader? _curMsgHeader;
 
   void _gotData(Uint8List data) {
     if (_state == _ConnState.closed) return;
@@ -107,7 +107,7 @@ class ConnectionImpl implements Connection {
         _curMsgHeader = MessageHeader.fromBuffer(_buffer);
       }
 
-      if (_curMsgHeader.length > _buffer.bytesAvailable) return;
+      if (_curMsgHeader!.length > _buffer.bytesAvailable) return;
 
       _handleMessage();
 
@@ -121,13 +121,13 @@ class ConnectionImpl implements Connection {
   }
 
   void _handleMessage() {
-    final messageName = MessageType.name[_curMsgHeader.messageType];
+    final messageName = MessageType.name[_curMsgHeader!.messageType];
     _log(LogMessage(
         message:
-            'Received backend message with type ${_curMsgHeader.messageType} (${String.fromCharCode(_curMsgHeader.messageType)}: ${messageName != null ? '$messageName' : ''})',
+            'Received backend message with type ${_curMsgHeader!.messageType} (${String.fromCharCode(_curMsgHeader!.messageType)}: ${messageName != null ? '$messageName' : ''})',
         connectionId: connectionId,
         connectionName: connectionName));
-    switch (_curMsgHeader.messageType) {
+    switch (_curMsgHeader!.messageType) {
       case MessageType.rowData:
         _handleRowDataMsg();
         break;
@@ -173,7 +173,7 @@ class ConnectionImpl implements Connection {
         break;
       default:
         throw Exception(
-            'Unknown message type (${_curMsgHeader.messageType}) received');
+            'Unknown message type (${_curMsgHeader!.messageType}) received');
         break;
     }
   }
@@ -212,7 +212,10 @@ class ConnectionImpl implements Connection {
           connectionName: connectionName,
           connectionId: connectionId));
 
-      final withoutSalt = _md5Encode(settings.password + settings.username);
+      // TODO check that username and password are not null?
+
+      final withoutSalt =
+          _md5Encode((settings.password ?? '') + (settings.username ?? ''));
       final hash =
           'md5' + _md5Encode(withoutSalt + String.fromCharCodes(msg.salt));
 
@@ -258,7 +261,7 @@ class ConnectionImpl implements Connection {
         queryEntry.finish();
       } else if (queryEntry is ParseEntry) {
         final prepared = queryEntry.complete();
-        if (_prepared != null) {
+        if (prepared != null) {
           _prepared.add(prepared);
         }
       } else if (queryEntry is ExtendedQueryEntry) {
@@ -299,12 +302,12 @@ class ConnectionImpl implements Connection {
   }
 
   void _handleRowDescriptionMsg() {
-    final msg = RowDescription.parse(_buffer, _curMsgHeader.length);
+    final msg = RowDescription.parse(_buffer, _curMsgHeader!.length);
     _log(LogMessage(
         connectionName: connectionName,
         connectionId: connectionId,
-        queryName: _currentQuery.queryName,
-        queryId: _currentQuery.queryId,
+        queryName: _currentQuery!.queryName,
+        queryId: _currentQuery!.queryId,
         message:
             'Received row description with field count ${msg.fieldCount}'));
     if (_currentQuery is SimpleQueryEntry) {
@@ -325,12 +328,12 @@ class ConnectionImpl implements Connection {
   }
 
   void _handleRowDataMsg() {
-    final msg = RowData.parse(_buffer, _curMsgHeader);
+    final msg = RowData.parse(_buffer, _curMsgHeader!);
     _log(LogMessage(
         connectionName: connectionName,
         connectionId: connectionId,
-        queryName: _currentQuery.queryName,
-        queryId: _currentQuery.queryId,
+        queryName: _currentQuery!.queryName,
+        queryId: _currentQuery!.queryId,
         message: 'Received row data'));
     if (_currentQuery is SimpleQueryEntry) {
       (_currentQuery as SimpleQueryEntry).addRow(msg);
@@ -342,7 +345,7 @@ class ConnectionImpl implements Connection {
   }
 
   void _handleCommandCompleteMsg() {
-    final msg = CommandComplete.parse(_buffer, _curMsgHeader);
+    final msg = CommandComplete.parse(_buffer, _curMsgHeader!);
     if (_currentQuery is SimpleQueryEntry) {
       (_currentQuery as SimpleQueryEntry)
           .setCommandTag(CommandTag.parse(msg.tag));
@@ -355,7 +358,7 @@ class ConnectionImpl implements Connection {
   }
 
   void _handleErrorResponseMsg() {
-    final msg = ErrorResponse.parse(_buffer, _curMsgHeader);
+    final msg = ErrorResponse.parse(_buffer, _curMsgHeader!);
     _log(LogMessage(
       connectionName: connectionName,
       connectionId: connectionId,
@@ -371,7 +374,7 @@ class ConnectionImpl implements Connection {
     // TODO handle fatal errors?
 
     if (_currentQuery != null) {
-      _currentQuery.addError(msg);
+      _currentQuery!.addError(msg);
       return;
     }
   }
@@ -388,11 +391,11 @@ class ConnectionImpl implements Connection {
 
   final _parameters = <String, String>{};
 
-  BackendKeyData _backendKeyData;
+  BackendKeyData? _backendKeyData;
 
-  int get pid => _backendKeyData?.pid;
+  int? get pid => _backendKeyData?.pid;
 
-  DateTime get connectedAt => _connectedAt;
+  DateTime? get connectedAt => _connectedAt;
 
   void _sendNext() {
     if (_currentQuery != null) return;
@@ -411,20 +414,20 @@ class ConnectionImpl implements Connection {
           connectionId: connectionId,
           connectionName: connectionName,
           message: 'Sending simple query message'));
-      _sendSimpleQuery(_currentQuery);
+      _sendSimpleQuery(_currentQuery as SimpleQueryEntry);
     } else if (_currentQuery is ParseEntry) {
       _logger(LogMessage(
           connectionId: connectionId,
           connectionName: connectionName,
           message: 'Sending parse message'));
-      _sendParseEntry(_currentQuery);
+      _sendParseEntry(_currentQuery as ParseEntry);
       // TODO
     } else if (_currentQuery is ExtendedQueryEntry) {
       _logger(LogMessage(
           connectionId: connectionId,
           connectionName: connectionName,
           message: 'Sending extended query message'));
-      _sendExtendedQueryEntry(_currentQuery);
+      _sendExtendedQueryEntry(_currentQuery as ExtendedQueryEntry);
     } else if (_currentQuery is ClosePreparedEntry) {
       _logger(LogMessage(
           connectionId: connectionId,
@@ -463,7 +466,7 @@ class ConnectionImpl implements Connection {
   }
 
   void _sendExtendedQueryEntry(ExtendedQueryEntry query) {
-    final bindMsg = Bind(query.params,
+    final bindMsg = Bind(query.params.cast<List<int>>(),
         statementName: query.query.name,
         portalName: '' /* TODO */,
         outputFormats: 0 /* TODO */,
@@ -476,7 +479,7 @@ class ConnectionImpl implements Connection {
     _socket.add(syncMsg.build());
   }
 
-  void _enqueueQuery(QueueEntry entry, {String queryName}) {
+  void _enqueueQuery(QueueEntry entry, {String? queryName}) {
     _queryQueue.add(entry);
     if (_queryQueue.length == 1) {
       _sendNext();
@@ -506,7 +509,7 @@ class ConnectionImpl implements Connection {
   }
 
   @override
-  Rows query(String sql, {String queryName}) {
+  Rows query(String sql, {String? queryName}) {
     final queryId = _queryIdGenerator.get;
     final entry = SimpleQueryEntry(sql,
         queryId: queryId, queryName: queryName ?? queryId);
@@ -516,7 +519,8 @@ class ConnectionImpl implements Connection {
 
   @override
   Future<CommandTag> execute(String sql,
-      {String queryName, List<dynamic> values}) async {
+      {String? queryName, List<dynamic>? values}) async {
+    // TODO values
     final rows = query(sql, queryName: queryName);
     return rows.finished;
   }
@@ -524,7 +528,7 @@ class ConnectionImpl implements Connection {
   @override
   Future<PreparedQuery> prepare(String query,
       {String statementName = '',
-      String queryName,
+      String? queryName,
       List<int> paramOIDs = const []}) async {
     final entry = ParseEntry(this, query,
         statementName: statementName,
@@ -539,11 +543,11 @@ class ConnectionImpl implements Connection {
 
   @override
   Rows queryPrepared(PreparedQuery query, List<dynamic> params,
-      {String queryName}) {
+      {String? queryName}) {
     dynamic paramFormats = List<int>.filled(params.length, 1);
     int i = -1;
     bool hasTextFormat = false;
-    params = params.map<List<int>>((p) {
+    params = params.map<List<int>?>((p) {
       i++;
       if (p is TextData) {
         hasTextFormat = true;
@@ -581,7 +585,7 @@ class ConnectionImpl implements Connection {
   }
 
   @override
-  Future<void> releasePrepared(PreparedQuery query, {String queryName}) {
+  Future<void> releasePrepared(PreparedQuery query, {String? queryName}) {
     final entry = ClosePreparedEntry(
         CloseMessage(query.name, type: CloseType.preparedStatement),
         queryId: _queryIdGenerator.get,
@@ -628,9 +632,9 @@ class ConnectionImpl implements Connection {
   }
 
   static Future<ConnectionImpl> connect(ConnSettings settings,
-      {String connectionName,
-      Logger logger,
-      IdGenerator queryIdGenerator}) async {
+      {String? connectionName,
+      Logger? logger,
+      IdGenerator? queryIdGenerator}) async {
     Socket socket = await Socket.connect(settings.hostname, settings.port);
 
     // TODO ssl

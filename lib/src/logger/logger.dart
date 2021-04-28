@@ -11,13 +11,13 @@ class LogMessage {
 
   final DateTime at;
 
-  final String connectionName;
+  final String? connectionName;
 
-  final String connectionId;
+  final String? connectionId;
 
-  final String queryName;
+  final String? queryName;
 
-  final String queryId;
+  final String? queryId;
 
   final String message;
 
@@ -28,8 +28,8 @@ class LogMessage {
       this.connectionId,
       this.queryName,
       this.queryId,
-      DateTime at,
-      this.message})
+      DateTime? at,
+      required this.message})
       : at = at ?? DateTime.now();
 
   @override

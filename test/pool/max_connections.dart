@@ -34,16 +34,16 @@ void main() {
       var stop1 = DateTime.now();
       expect(stop1.difference(start), greaterThan(Duration(seconds: 10)));
 
-      expect((await row1.one()).toList()[1], 1);
-      expect((await row2.one()).toList()[1], 2);
-      expect((await row3.one()).toList()[1], 3);
+      expect((await row1.one())?.toList()[1], 1);
+      expect((await row2.one())?.toList()[1], 2);
+      expect((await row3.one())?.toList()[1], 3);
 
       await row4.finished;
 
       var stop2 = DateTime.now();
       expect(stop2.difference(stop1), greaterThan(Duration(seconds: 10)));
 
-      expect((await row4.one()).toList()[1], 4);
+      expect((await row4.one())?.toList()[1], 4);
 
       expect(pool.poolStats.totalConnectionsMade, 3);
 

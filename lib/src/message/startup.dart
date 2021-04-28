@@ -7,14 +7,14 @@ class StartupMessage {
 
   final String databaseName;
 
-  final String timezone;
+  final String? timezone;
 
-  final String applicationName;
+  final String? applicationName;
 
   StartupMessage(
-      {this.protocolVersion,
-      this.username,
-      this.databaseName,
+      {required this.protocolVersion,
+      required this.username,
+      required this.databaseName,
       this.timezone,
       this.applicationName});
 
@@ -31,11 +31,11 @@ class StartupMessage {
     buffer.addUtf8String('UTF8');
     if (timezone != null) {
       buffer.addUtf8String('TimeZone');
-      buffer.addUtf8String(timezone);
+      buffer.addUtf8String(timezone!);
     }
     if (applicationName != null) {
       buffer.addUtf8String('application_name');
-      buffer.addUtf8String(applicationName);
+      buffer.addUtf8String(applicationName!);
     }
     buffer.addByte(0);
     buffer.setLength(startup: true);

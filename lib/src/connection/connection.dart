@@ -17,36 +17,36 @@ class ConnSettings {
   final String hostname;
   final int port;
   final String databaseName;
-  final String username;
-  final String password;
-  final String timezone;
+  final String? username;
+  final String? password;
+  final String? timezone;
 
   ConnSettings({
     this.hostname = 'localhost',
     this.port = 5432,
     this.databaseName = 'postgres',
-    this.username,
+    required this.username,
     this.password,
     this.timezone,
   });
 
-  factory ConnSettings.parse(/* String | Uri */ url, {String timezone}) {
-    Uri uri;
+  factory ConnSettings.parse(/* String | Uri */ url, {String? timezone}) {
+    Uri? uri;
     if (url is String) {
       uri = Uri.tryParse(url);
       if (uri == null) {
-        throw Exception("Invalid url");
+        throw Exception('Invalid url');
       }
     } else if (url is Uri) {
       uri = url;
     } else if (url == null) {
-      throw Exception("url cannot be null");
+      throw Exception('url cannot be null');
     } else {
-      throw Exception("unknown url type");
+      throw Exception('unknown url type');
     }
 
-    String username;
-    String password;
+    String? username;
+    String? password;
 
     {
       final userInfoParts = uri.userInfo.split(':');
@@ -74,17 +74,17 @@ void nopLogger(LogMessage msg) {}
 abstract class Querier {
   ConnSettings get settings;
 
-  Rows query(String query, {String queryName});
+  Rows query(String query, {String? queryName});
 
-  Future<CommandTag> execute(String query, {String queryName});
+  Future<CommandTag> execute(String query, {String? queryName});
 
   Future<PreparedQuery> prepare(String query,
       {String statementName = '',
-      String queryName,
+      String? queryName,
       List<int> paramOIDs = const []});
 
   Rows queryPrepared(PreparedQuery query, List<dynamic> params,
-      {String queryName});
+      {String? queryName});
 
   Future<void> releasePrepared(PreparedQuery query);
 }
@@ -95,9 +95,9 @@ abstract class Connection implements Querier {
   String get connectionName;
 
   static Future<Connection> connect(ConnSettings settings,
-          {String connectionName,
-          Logger logger,
-          IdGenerator queryIdGenerator}) =>
+          {String? connectionName,
+          Logger? logger,
+          IdGenerator? queryIdGenerator}) =>
       ConnectionImpl.connect(settings,
           connectionName: connectionName,
           logger: logger,
@@ -117,7 +117,7 @@ class CommandTag {
 
   static CommandTag parse(String tag) {
     final parts = tag.split(' ');
-    return CommandTag(parts.first, tag, int.tryParse(parts.last));
+    return CommandTag(parts.first, tag, int.parse(parts.last));
   }
 
   @override
@@ -129,7 +129,7 @@ class Rows extends StreamView<Row> {
 
   Rows(Stream<Row> rows, this.finished) : super(rows);
 
-  Future<Row> one() async {
+  Future<Row?> one() async {
     try {
       return await first;
     } on StateError catch (e) {
@@ -169,7 +169,7 @@ class PreparedQueryImpl implements PreparedQuery {
       this.connection, this.name, this.paramOIDs, this.fieldDescriptions);
 
   @override
-  Rows execute(List<dynamic> params, {String queryName}) {
+  Rows execute(List<dynamic> params, {String? queryName}) {
     return connection.queryPrepared(this, params, queryName: queryName);
   }
 
@@ -184,11 +184,12 @@ class PreparedQueryImpl implements PreparedQuery {
 abstract class FormattedData {
   int get format;
 
-  List<int> get data;
+  List<int>? get data;
 }
 
 class BinaryData extends FormattedData {
-  final List<int> data;
+  @override
+  final List<int>? data;
 
   @override
   final int format = 1;
@@ -197,7 +198,8 @@ class BinaryData extends FormattedData {
 }
 
 class TextData extends FormattedData {
-  final List<int> data;
+  @override
+  final List<int>? data;
 
   @override
   final int format = 0;
@@ -205,7 +207,7 @@ class TextData extends FormattedData {
   TextData(this.data);
 
   @override
-  String toString() => utf8.decode(data);
+  String toString() => utf8.decode(data ?? []);
 }
 
 class ConnectionStats {

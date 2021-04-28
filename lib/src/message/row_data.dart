@@ -11,7 +11,7 @@ class RowData {
   static RowData parse(ReadBuffer buffer, MessageHeader header) {
     final count = buffer.readInt16();
 
-    final fieldValues = List<List<int>>(count);
+    final fieldValues = List<List<int>>.filled(count, []);
 
     for (int i = 0; i < count; i++) {
       final length = buffer.readInt32();

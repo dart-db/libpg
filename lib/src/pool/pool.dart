@@ -11,11 +11,11 @@ import 'package:pedantic/pedantic.dart';
 
 abstract class PGPool implements Querier {
   factory PGPool(ConnSettings settings,
-          {Logger logger,
-          int maxConnections,
-          int maxIdleConnections,
-          Duration idleConnectionTimeout,
-          Duration connectionReuseTimeout}) =>
+          {Logger? logger,
+          int? maxConnections,
+          int? maxIdleConnections,
+          Duration? idleConnectionTimeout,
+          Duration? connectionReuseTimeout}) =>
       _PGPoolImpl(settings,
           logger: logger,
           maxConnections: maxConnections,
@@ -23,13 +23,13 @@ abstract class PGPool implements Querier {
           idleConnectionTimeout: idleConnectionTimeout,
           connectionReuseTimeout: connectionReuseTimeout);
 
-  set maxConnections(int value);
+  set maxConnections(int? value);
 
-  int get maxConnections;
+  int? get maxConnections;
 
-  set maxIdleConnections(int value);
+  set maxIdleConnections(int? value);
 
-  int get maxIdleConnections;
+  int? get maxIdleConnections;
 
   Future<Connection> createConnection();
 
@@ -44,13 +44,13 @@ class _PGPoolImpl implements PGPool {
   @override
   final ConnSettings settings;
 
-  int _maxConnections;
+  int? _maxConnections;
 
-  int _maxIdleConnections;
+  int? _maxIdleConnections;
 
-  Duration _idleConnectionTimeout;
+  Duration? _idleConnectionTimeout;
 
-  Duration _connectionReuseTimeout;
+  Duration? _connectionReuseTimeout;
 
   final _connections = HashSet<Connection>();
 
@@ -60,7 +60,7 @@ class _PGPoolImpl implements PGPool {
 
   final _idleTimes = HashMap<Connection, DateTime>();
 
-  Timer _idleTimer;
+  Timer? _idleTimer;
 
   final _idleAdded = Channel<void>();
 
@@ -69,12 +69,12 @@ class _PGPoolImpl implements PGPool {
   final IdGenerator _queryIdGenerator;
 
   _PGPoolImpl(this.settings,
-      {Logger logger,
-      IdGenerator queryIdGenerator,
-      int maxConnections,
-      int maxIdleConnections,
-      Duration idleConnectionTimeout,
-      Duration connectionReuseTimeout})
+      {Logger? logger,
+      IdGenerator? queryIdGenerator,
+      int? maxConnections,
+      int? maxIdleConnections,
+      Duration? idleConnectionTimeout,
+      Duration? connectionReuseTimeout})
       : _logger = logger ?? nopLogger,
         _queryIdGenerator = queryIdGenerator ?? IdGenerator(prefix: 'query') {
     this.maxConnections = maxConnections;
@@ -84,10 +84,10 @@ class _PGPoolImpl implements PGPool {
   }
 
   @override
-  int get maxConnections => _maxConnections;
+  int? get maxConnections => _maxConnections;
 
   @override
-  set maxConnections(int value) {
+  set maxConnections(int? value) {
     if (value != null && value <= 0) value = null;
     _maxConnections = value;
 
@@ -95,10 +95,10 @@ class _PGPoolImpl implements PGPool {
   }
 
   @override
-  int get maxIdleConnections => _maxIdleConnections;
+  int? get maxIdleConnections => _maxIdleConnections;
 
   @override
-  set maxIdleConnections(int value) {
+  set maxIdleConnections(int? value) {
     if (value != null && value <= 0) value = null;
 
     _maxIdleConnections = value;
@@ -106,24 +106,24 @@ class _PGPoolImpl implements PGPool {
     _whenExceedIdleConnections();
   }
 
-  Duration get idleConnectionTimeout => _idleConnectionTimeout;
+  Duration? get idleConnectionTimeout => _idleConnectionTimeout;
 
-  set idleConnectionTimeout(Duration value) {
+  set idleConnectionTimeout(Duration? value) {
     if (value != null && value.isNegative) value = null;
 
     _idleConnectionTimeout = value;
   }
 
-  Duration get connectionReuseTimeout => _connectionReuseTimeout;
+  Duration? get connectionReuseTimeout => _connectionReuseTimeout;
 
-  set connectionReuseTimeout(Duration value) {
+  set connectionReuseTimeout(Duration? value) {
     if (value != null && value.isNegative) value = null;
 
     _connectionReuseTimeout = value;
   }
 
   @override
-  Rows query(String query, {String queryName}) {
+  Rows query(String query, {String? queryName}) {
     if (_closed) throw Exception('Closed');
 
     final controller = StreamController<Row>();
@@ -160,10 +160,10 @@ class _PGPoolImpl implements PGPool {
   }
 
   @override
-  Future<CommandTag> execute(String query, {String queryName}) async {
+  Future<CommandTag> execute(String query, {String? queryName}) async {
     if (_closed) throw Exception('Closed');
 
-    Connection connection;
+    Connection? connection;
     CommandTag ret;
     try {
       connection = await _getConnection();
@@ -183,11 +183,11 @@ class _PGPoolImpl implements PGPool {
   @override
   Future<PreparedQuery> prepare(String query,
       {String statementName = '',
-      String queryName,
+      String? queryName,
       List<int> paramOIDs = const []}) async {
     if (_closed) throw Exception('Closed');
 
-    Connection connection;
+    Connection? connection;
     PreparedQuery ret;
 
     try {
@@ -196,21 +196,19 @@ class _PGPoolImpl implements PGPool {
           statementName: statementName,
           queryName: queryName,
           paramOIDs: paramOIDs);
+      unawaited(_releaseConnectionToPool(connection));
+      return PoolPreparedQuery(this, ret as PreparedQueryImpl);
     } catch (e) {
       if (connection != null) {
         unawaited(_releaseConnectionToPool(connection));
       }
       rethrow;
     }
-
-    unawaited(_releaseConnectionToPool(connection));
-
-    return PoolPreparedQuery(this, ret);
   }
 
   @override
   Rows queryPrepared(PreparedQuery query, List<dynamic> params,
-      {String queryName}) {
+      {String? queryName}) {
     if (_closed) throw Exception('Closed');
 
     if (query is! PoolPreparedQuery) {
@@ -218,7 +216,7 @@ class _PGPoolImpl implements PGPool {
           'PreparedQuery does not belong to a connection in this pool');
     }
 
-    final connection = (query as PoolPreparedQuery)._inner.connection;
+    final connection = query._inner.connection as Connection;
     if (!_connections.contains(connection)) {
       throw Exception(
           'PreparedQuery does not belong to a connection in this pool');
@@ -262,7 +260,7 @@ class _PGPoolImpl implements PGPool {
           'PreparedQuery does not belong to a connection in this pool');
     }
 
-    final connection = (query as PoolPreparedQuery)._inner.connection;
+    final connection = query._inner.connection as Connection;
     if (!_connections.contains(connection)) {
       throw Exception(
           'PreparedQuery does not belong to a connection in this pool');
@@ -270,7 +268,7 @@ class _PGPoolImpl implements PGPool {
 
     await _awaitForConnection(connection);
     try {
-      await connection.releasePrepared((query as PoolPreparedQuery)._inner);
+      await connection.releasePrepared(query._inner);
     } catch (_) {
       unawaited(_releaseConnectionToPool(connection));
       rethrow;
@@ -290,7 +288,7 @@ class _PGPoolImpl implements PGPool {
     return _Connection(this, connection);
   }
 
-  Future<void> _getConnectionSequencer;
+  Future<void>? _getConnectionSequencer;
 
   Future<Connection> _getConnection() async {
     while (_getConnectionSequencer != null) {
@@ -315,7 +313,7 @@ class _PGPoolImpl implements PGPool {
 
   Future<Connection> _getConnectionInner() async {
     if (_idleConnections.isEmpty) {
-      if (_maxConnections == null || _connections.length < _maxConnections) {
+      if (_maxConnections == null || _connections.length < _maxConnections!) {
         final connection = await createConnection(logger: _logger);
         _poolStats.totalConnectionsMade++;
 
@@ -343,7 +341,7 @@ class _PGPoolImpl implements PGPool {
       }
     }
 
-    final connection = _getLongestIdleConnection();
+    final connection = _getLongestIdleConnection()!;
     _usedConnections.add(connection);
 
     return connection;
@@ -372,7 +370,7 @@ class _PGPoolImpl implements PGPool {
   }
 
   Future<void> _releaseConnectionToPool(Connection connection,
-      {String queryName}) {
+      {String? queryName}) {
     _logger(LogMessage(
         connectionName: connection.connectionName,
         connectionId: connection.connectionId,
@@ -382,7 +380,7 @@ class _PGPoolImpl implements PGPool {
 
     if (_closed) return _removeConnection(connection);
 
-    if (_maxConnections != null && _connections.length > _maxConnections) {
+    if (_maxConnections != null && _connections.length > _maxConnections!) {
       return _removeConnection(connection);
     }
 
@@ -395,11 +393,11 @@ class _PGPoolImpl implements PGPool {
         _waiting.remove(connection);
       }
       completer.complete(connection);
-      return null;
+      return Future.value();
     }
     _addIdleConnection(connection);
 
-    return null;
+    return Future.value();
   }
 
   final _waiting = <Connection, List<Completer<Connection>>>{};
@@ -411,13 +409,13 @@ class _PGPoolImpl implements PGPool {
     }
 
     final completer = Completer<Connection>();
-    List<Completer<Connection>> completers = _waiting[connection];
+    List<Completer<Connection>>? completers = _waiting[connection];
     completers ??= _waiting[connection] = <Completer<Connection>>[];
     completers.add(completer);
     return completer.future;
   }
 
-  Connection _getLongestIdleConnection() {
+  Connection? _getLongestIdleConnection() {
     if (_idleConnections.isNotEmpty) {
       final connection = _idleConnections.first;
       _removeIdleConnection(connection);
@@ -453,20 +451,20 @@ class _PGPoolImpl implements PGPool {
 
     if (_idleConnections.isEmpty) return;
 
-    Duration duration = _connectionReuseTimeout;
+    Duration? duration = _connectionReuseTimeout;
 
     if (_maxIdleConnections != null &&
-        (_connections.length - _usedConnections.length) < _maxIdleConnections) {
+        (_connections.length - _usedConnections.length) < _maxIdleConnections!) {
       if (duration != null &&
           _idleConnectionTimeout != null &&
-          _idleConnectionTimeout < duration) {
+          _idleConnectionTimeout! < duration) {
         duration = _idleConnectionTimeout;
       }
     }
 
     if (duration == null) return;
 
-    DateTime.now().difference(_idleTimes[_idleConnections.first]);
+    DateTime.now().difference(_idleTimes[_idleConnections.first]!);
     _idleTimer = Timer(duration, _doIdleTimer);
   }
 
@@ -483,7 +481,7 @@ class _PGPoolImpl implements PGPool {
 
     if (_maxConnections == null) return;
 
-    while (_connections.length > _maxConnections) {
+    while (_connections.length > _maxConnections!) {
       final connection = _getLongestIdleConnection();
       if (connection == null) break;
       _removeConnection(connection);
@@ -496,10 +494,10 @@ class _PGPoolImpl implements PGPool {
     if (_maxIdleConnections == null || _connectionReuseTimeout == null) return;
 
     while (_idleConnections.isNotEmpty &&
-        (_connections.length - _usedConnections.length) > _maxIdleConnections) {
+        (_connections.length - _usedConnections.length) > _maxIdleConnections!) {
       final connection = _idleConnections.first;
-      final at = _idleTimes[connection];
-      if (DateTime.now().difference(at) < _connectionReuseTimeout) break;
+      final at = _idleTimes[connection]!;
+      if (DateTime.now().difference(at) < _connectionReuseTimeout!) break;
       _removeConnection(connection);
     }
   }
@@ -511,8 +509,8 @@ class _PGPoolImpl implements PGPool {
 
     while (_idleConnections.isNotEmpty) {
       final connection = _idleConnections.first;
-      final at = _idleTimes[connection];
-      if (DateTime.now().difference(at) < _idleConnectionTimeout) break;
+      final at = _idleTimes[connection]!;
+      if (DateTime.now().difference(at) < _idleConnectionTimeout!) break;
       _removeConnection(connection);
     }
   }
@@ -538,7 +536,7 @@ class _PGPoolImpl implements PGPool {
 
   @override
   Future<Connection> createConnection(
-      {String connectionName, Logger logger}) async {
+      {String? connectionName, Logger? logger}) async {
     final connection = await Connection.connect(settings,
         connectionName: connectionName,
         logger: logger,
@@ -574,7 +572,10 @@ class PoolStats {
   final int totalConnectionsMade;
 
   PoolStats(
-      {this.open, this.idle, this.idleWaitTime, this.totalConnectionsMade});
+      {required this.open,
+      required this.idle,
+      required this.idleWaitTime,
+      required this.totalConnectionsMade});
 }
 
 abstract class PoolQuerier implements Querier {
@@ -584,7 +585,7 @@ abstract class PoolQuerier implements Querier {
 class _Connection implements PoolQuerier {
   final _PGPoolImpl pool;
 
-  Connection _connection;
+  Connection? _connection;
 
   _Connection(this.pool, this._connection);
 
@@ -594,37 +595,37 @@ class _Connection implements PoolQuerier {
       throw Exception('connection already released');
     }
 
-    return _connection.settings;
+    return _connection!.settings;
   }
 
   @override
-  Rows query(String query, {String queryName}) {
+  Rows query(String query, {String? queryName}) {
     if (_connection == null) {
       throw Exception('connection already released');
     }
 
-    return _connection.query(query, queryName: queryName);
+    return _connection!.query(query, queryName: queryName);
   }
 
   @override
-  Future<CommandTag> execute(String query, {String queryName}) {
+  Future<CommandTag> execute(String query, {String? queryName}) {
     if (_connection == null) {
       throw Exception('connection already released');
     }
 
-    return _connection.execute(query, queryName: queryName);
+    return _connection!.execute(query, queryName: queryName);
   }
 
   @override
   Future<PreparedQuery> prepare(String query,
       {String statementName = '',
-      String queryName,
+      String? queryName,
       List<int> paramOIDs = const []}) {
     if (_connection == null) {
       throw Exception('connection already released');
     }
 
-    return _connection.prepare(query,
+    return _connection!.prepare(query,
         statementName: statementName,
         queryName: queryName,
         paramOIDs: paramOIDs);
@@ -632,12 +633,12 @@ class _Connection implements PoolQuerier {
 
   @override
   Rows queryPrepared(PreparedQuery query, List<dynamic> params,
-      {String queryName}) {
+      {String? queryName}) {
     if (_connection == null) {
       throw Exception('connection already released');
     }
 
-    return _connection.queryPrepared(query, params, queryName: queryName);
+    return _connection!.queryPrepared(query, params, queryName: queryName);
   }
 
   @override
@@ -646,7 +647,7 @@ class _Connection implements PoolQuerier {
       throw Exception('connection already released');
     }
 
-    return _connection.releasePrepared(query);
+    return _connection!.releasePrepared(query);
   }
 
   @override
@@ -655,7 +656,7 @@ class _Connection implements PoolQuerier {
       return;
     }
 
-    final connection = _connection;
+    final connection = _connection!;
     _connection = null;
     pool._releaseConnectionToPool(connection);
   }

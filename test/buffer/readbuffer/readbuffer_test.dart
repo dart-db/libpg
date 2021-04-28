@@ -3,15 +3,13 @@ import 'package:test/test.dart';
 
 void main() {
   group('ReadBuffer', () {
-    ReadBuffer buffer1;
+    ReadBuffer buffer1 = ReadBuffer();
+    buffer1.append(List<int>.generate(10, (i) => i));
+    buffer1.append(List<int>.generate(10, (i) => 10 + i));
+    buffer1.append(List<int>.generate(10, (i) => 20 + i));
+    buffer1.append(List<int>.generate(10, (i) => 30 + i));
 
-    setUp(() {
-      buffer1 = ReadBuffer();
-      buffer1.append(List<int>.generate(10, (i) => i));
-      buffer1.append(List<int>.generate(10, (i) => 10 + i));
-      buffer1.append(List<int>.generate(10, (i) => 20 + i));
-      buffer1.append(List<int>.generate(10, (i) => 30 + i));
-    });
+    setUp(() {});
 
     test('readRow', () {
       expect(buffer1.readBytes(5), List<int>.generate(5, (i) => i));

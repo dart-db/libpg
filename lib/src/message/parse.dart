@@ -48,7 +48,7 @@ class DescribeMessage {
 }
 
 class Bind {
-  final List<List<int>> params;
+  final List<List<int>?> params;
 
   final String statementName;
 

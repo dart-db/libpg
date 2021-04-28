@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'package:libpg/src/codec/sqlify/sqlify.dart';
 
 String substitute(String statement,
-    {Map<String, dynamic> values,
+    {Map<String, dynamic> values = const {},
     String prefix = r'@',
     bool ignoreAbsent = false}) {
   if (values.isEmpty) return statement;

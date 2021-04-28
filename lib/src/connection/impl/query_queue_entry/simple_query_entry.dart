@@ -13,47 +13,47 @@ class SimpleQueryEntry implements QueueEntry {
   final DateTime startedAt;
 
   @override
-  final String queryId;
+  final String? queryId;
 
   @override
-  final String queryName;
+  final String? queryName;
 
   final _completer = Completer<CommandTag>();
 
   final _controller = StreamController<Row>();
 
-  List<FieldDescription> _fields;
+  List<FieldDescription>? _fields;
 
-  CommandTag _commandTag;
+  CommandTag? _commandTag;
 
   final _error = <dynamic>[];
 
   SimpleQueryEntry(this.statement,
-      {DateTime startedAt, this.queryId, this.queryName})
+      {DateTime? startedAt, this.queryId, this.queryName})
       : startedAt = startedAt ?? DateTime.now();
 
   Stream<Row> get stream => _controller.stream;
 
   Future<CommandTag> get onFinish => _completer.future;
 
-  List<FieldDescription> get fieldDescriptions => _fields;
+  List<FieldDescription> get fieldDescriptions => _fields!;
 
   void setFieldsDescription(List<FieldDescription> fields) {
     _fields = fields;
   }
 
-  int get fieldCount => _fields.length;
+  int get fieldCount => _fields!.length;
 
-  CommandTag get commandTag => _commandTag;
+  CommandTag? get commandTag => _commandTag;
 
   void addRow(RowData rowData) {
-    final values = List<dynamic>(_fields.length);
-    final columns = List<Column>(_fields.length);
+    final values = List<dynamic>.filled(_fields!.length, null);
+    final columns = List<Column?>.filled(_fields!.length, null);
     final columnsMap = <String, Column>{};
     final map = <String, dynamic>{};
 
-    for (int i = 0; i < _fields.length; i++) {
-      final description = _fields[i];
+    for (int i = 0; i < _fields!.length; i++) {
+      final description = _fields![i];
       final data = rowData[i];
 
       final value = decode(description, data);
@@ -72,11 +72,11 @@ class SimpleQueryEntry implements QueueEntry {
       columnsMap[column.name] = column;
     }
 
-    _controller.add(Row(columns, columnsMap, values, map));
+    _controller.add(Row(columns.cast<Column>(), columnsMap, values, map));
   }
 
   @override
-  void addError(error, [StackTrace trace]) {
+  void addError(error, [StackTrace? trace]) {
     _error.add(error);
     if (!_controller.isClosed) {
       _controller.addError(error, trace);

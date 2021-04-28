@@ -29,7 +29,7 @@ String sqlify(dynamic value, {String quote = "'"}) {
         }
 
         x = x.replaceAllMapped(RegExp(r'([^\\])"'), (m) {
-          return m.group(1) + r'\"';
+          return m.group(1)! + r'\"';
         });
         return '\"$x\"';
       }

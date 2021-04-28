@@ -1,5 +1,5 @@
 abstract class IdGenerator {
-  String get prefix;
+  String? get prefix;
 
   String get get;
 
@@ -7,7 +7,8 @@ abstract class IdGenerator {
 }
 
 class _IdGenerator implements IdGenerator {
-  final String prefix;
+  @override
+  final String? prefix;
 
   final _subIds = <int>[0];
 
@@ -32,7 +33,8 @@ class _IdGenerator implements IdGenerator {
 }
 
 class TimedIdGenerator implements IdGenerator {
-  final String prefix;
+  @override
+  final String? prefix;
 
   var _subIds = <int>[];
 

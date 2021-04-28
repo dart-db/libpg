@@ -15,18 +15,18 @@ class ParseEntry implements QueueEntry {
   final List<int> paramOIDs;
 
   @override
-  final String queryName;
+  final String? queryName;
 
   @override
-  final String queryId;
+  final String? queryId;
 
   final _completer = Completer<PreparedQuery>();
 
   ParseEntryState state = ParseEntryState.unsent;
 
-  List<int> receivedParamOIDs;
+  List<int>? receivedParamOIDs;
 
-  List<FieldDescription> _fieldDescription;
+  List<FieldDescription>? _fieldDescription;
 
   ParseEntry(this.connection, this.statement,
       {this.statementName = '',
@@ -46,18 +46,18 @@ class ParseEntry implements QueueEntry {
   }
 
   @override
-  void addError(error, [StackTrace stack]) {
+  void addError(error, [StackTrace? stack]) {
     state = ParseEntryState.error;
     _error = error;
   }
 
-  PreparedQuery complete() {
+  PreparedQuery? complete() {
     if (_error != null) {
       final result = PreparedQueryImpl(
           connection,
           statementName,
-          UnmodifiableListView(receivedParamOIDs),
-          UnmodifiableListView(_fieldDescription));
+          UnmodifiableListView(receivedParamOIDs!),
+          UnmodifiableListView(_fieldDescription!));
       state = ParseEntryState.successful;
       _completer.complete(result);
       return result;

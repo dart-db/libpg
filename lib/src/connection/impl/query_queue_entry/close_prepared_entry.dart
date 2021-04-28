@@ -5,10 +5,10 @@ import 'package:libpg/src/message/parse.dart';
 
 class ClosePreparedEntry implements QueueEntry {
   @override
-  final String queryId;
+  final String? queryId;
 
   @override
-  final String queryName;
+  final String? queryName;
 
   final CloseMessage message;
 
@@ -17,7 +17,7 @@ class ClosePreparedEntry implements QueueEntry {
   ClosePreparedEntry(this.message, {this.queryId, this.queryName});
 
   @override
-  void addError(error, [StackTrace trace]) {
+  void addError(error, [StackTrace? trace]) {
     if (!_completer.isCompleted) {
       _completer.completeError(error, trace);
     }

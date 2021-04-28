@@ -22,13 +22,13 @@ class FieldDescription {
   final int formatType;
 
   FieldDescription(
-      {this.name,
-      this.tableOid,
-      this.columnAttributeNumber,
-      this.oid,
-      this.typeLen,
-      this.typeModifier,
-      this.formatType});
+      {required this.name,
+      required this.tableOid,
+      required this.columnAttributeNumber,
+      required this.oid,
+      required this.typeLen,
+      required this.typeModifier,
+      required this.formatType});
 
   static FieldDescription parse(ReadBuffer buffer, int msgLength) {
     final String name = buffer.readUtf8String(msgLength);
@@ -56,15 +56,13 @@ class RowDescription {
 
   final List<FieldDescription> fields;
 
-  RowDescription({this.fieldCount, this.fields});
+  RowDescription({required this.fieldCount, required this.fields});
 
   static RowDescription parse(ReadBuffer buffer, int length) {
     final fieldCount = buffer.readInt16();
 
-    final columns = List<FieldDescription>(fieldCount);
-    for (int i = 0; i < fieldCount; i++) {
-      columns[i] = FieldDescription.parse(buffer, length);
-    }
+    final columns = List<FieldDescription>.generate(
+        fieldCount, (i) => FieldDescription.parse(buffer, length));
 
     return RowDescription(fieldCount: fieldCount, fields: columns);
   }

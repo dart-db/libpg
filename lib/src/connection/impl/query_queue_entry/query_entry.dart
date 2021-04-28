@@ -4,9 +4,9 @@ export 'close_prepared_entry.dart';
 export 'parse_entry.dart';
 
 abstract class QueueEntry {
-  String get queryId;
+  String? get queryId;
 
-  String get queryName;
+  String? get queryName;
 
   void addError(error, [StackTrace trace]);
 }

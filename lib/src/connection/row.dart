@@ -14,13 +14,13 @@ class Column {
   final int formatCode;
 
   Column(
-      {this.index,
-      this.name,
-      this.value,
-      this.oid,
-      this.typeLen,
-      this.typeModifier,
-      this.formatCode});
+      {required this.index,
+      required this.name,
+      required this.value,
+      required this.oid,
+      required this.typeLen,
+      required this.typeModifier,
+      required this.formatCode});
 }
 
 class Row {

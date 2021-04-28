@@ -2,39 +2,39 @@ import 'package:libpg/src/buffer/read_buffer.dart';
 import 'package:libpg/src/message/message_header.dart';
 
 class ErrorResponse {
-  final String severity;
+  final String? severity;
 
-  final String code;
+  final String? code;
 
-  final String message;
+  final String? message;
 
-  final String detail;
+  final String? detail;
 
-  final String hint;
+  final String? hint;
 
-  final int position;
+  final int? position;
 
-  final int internalPosition;
+  final int? internalPosition;
 
-  final String internalQuery;
+  final String? internalQuery;
 
-  final String where;
+  final String? where;
 
-  final String schemaName;
+  final String? schemaName;
 
-  final String tableName;
+  final String? tableName;
 
-  final String columnName;
+  final String? columnName;
 
-  final String dataTypeName;
+  final String? dataTypeName;
 
-  final String constraintName;
+  final String? constraintName;
 
-  final String file;
+  final String? file;
 
-  final String line;
+  final String? line;
 
-  final String routine;
+  final String? routine;
 
   ErrorResponse(
       {this.severity,
@@ -55,26 +55,27 @@ class ErrorResponse {
       this.line,
       this.routine});
 
+  @override
   String toString() => 'ErrorResponse($code, $message)';
 
   static ErrorResponse parse(ReadBuffer buffer, MessageHeader header) {
-    String severity;
-    String code;
-    String message;
-    String detail;
-    String hint;
-    int position;
-    int internalPosition;
-    String internalQuery;
-    String where;
-    String schemaName;
-    String tableName;
-    String columnName;
-    String dataTypeName;
-    String constraintName;
-    String file;
-    String line;
-    String routine;
+    String? severity;
+    String? code;
+    String? message;
+    String? detail;
+    String? hint;
+    int? position;
+    int? internalPosition;
+    String? internalQuery;
+    String? where;
+    String? schemaName;
+    String? tableName;
+    String? columnName;
+    String? dataTypeName;
+    String? constraintName;
+    String? file;
+    String? line;
+    String? routine;
 
     String key = String.fromCharCode(buffer.readByte());
     while (key != '\x00') {
@@ -96,10 +97,10 @@ class ErrorResponse {
           hint = value;
           break;
         case 'P':
-          position = int.tryParse(value);
+          position = int.parse(value);
           break;
         case 'p':
-          internalPosition = int.tryParse(value);
+          internalPosition = int.parse(value);
           break;
         case 'q':
           internalQuery = value;
@@ -160,6 +161,6 @@ class ErrorResponse {
 }
 
 abstract class ErrorResponseCode {
-  static const uniqueViolation = "23505";
+  static const uniqueViolation = '23505';
   static const invalidSqlStatementName = "26000";
 }
