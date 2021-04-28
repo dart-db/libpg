@@ -3,32 +3,28 @@ class CannotDecode implements Exception {
 }
 
 class StringReader {
-  String _string;
+  String string;
 
-  StringReader({String string}) : _string = string ?? '';
+  StringReader({String? string}) : string = string ?? '';
 
-  String get string => _string;
+  bool get isEmpty => string.isEmpty;
 
-  set string(String value) => _string = value;
+  bool get isNotEmpty => string.isNotEmpty;
 
-  bool get isEmpty => _string.isEmpty;
-
-  bool get isNotEmpty => _string.isNotEmpty;
-
-  String substring(int startIndex, [int endIndex]) {
-    _string = string.substring(startIndex, endIndex);
-    return _string;
+  String substring(int startIndex, [int? endIndex]) {
+    string = string.substring(startIndex, endIndex);
+    return string;
   }
 
   bool startsWith(Pattern pattern, [int index = 0]) {
-    return _string.startsWith(pattern, index);
+    return string.startsWith(pattern, index);
   }
 
   bool substringIfStartsWith(String pattern) {
-    if (!_string.startsWith(pattern)) {
+    if (!string.startsWith(pattern)) {
       return false;
     }
-    _string.substring(pattern.length);
+    string.substring(pattern.length);
     return true;
   }
 }
@@ -121,12 +117,12 @@ String _parseString(dynamic _input) {
   final match = regExp.firstMatch(input.string);
 
   if (match == null) throw Exception();
-  final ret = match.group(1);
+  final ret = match.group(1)!;
   input.substring(ret.length + 2);
   return ret.replaceAll('""', '"');
 }
 
-int _parseInt(dynamic _input) {
+int? _parseInt(dynamic _input) {
   if (_input is! StringReader) _input = StringReader(string: _input);
   final StringReader input = _input;
 
@@ -135,11 +131,11 @@ int _parseInt(dynamic _input) {
 
   if (match == null) return null;
   final ret = match.group(1);
-  input.substring(ret.length);
+  input.substring(ret!.length);
   return int.parse(ret);
 }
 
-double _parseFloat(dynamic _input) {
+double? _parseFloat(dynamic _input) {
   if (_input is! StringReader) _input = StringReader(string: _input);
   final StringReader input = _input;
 
@@ -149,31 +145,31 @@ double _parseFloat(dynamic _input) {
 
   if (match == null) return null;
   final ret = match.group(1);
-  input.substring(ret.length);
+  input.substring(ret!.length);
   return double.parse(ret);
 }
 
 bool parseBool(String input) {
   switch(input) {
-    case "t":
-    case "true":
-    case "yes":
-    case "on":
-    case "1":
+    case 't':
+    case 'true':
+    case 'yes':
+    case 'on':
+    case '1':
       return true;
-    case "f":
-    case "false":
-    case "no":
-    case "off":
-    case "0":
-    case "n":
+    case 'f':
+    case 'false':
+    case 'no':
+    case 'off':
+    case '0':
+    case 'n':
       return false;
     default:
-      throw Exception("Unknown boolean value");
+      throw Exception('Unknown boolean value');
   }
 }
 
-String _parseUnquotedString(dynamic _input) {
+String? _parseUnquotedString(dynamic _input) {
   if (_input is! StringReader) _input = StringReader(string: _input);
   final StringReader input = _input;
 
@@ -182,7 +178,6 @@ String _parseUnquotedString(dynamic _input) {
 
   if (match == null) return null;
   final ret = match.group(1);
-  input.substring(ret.length);
-
+  input.substring(ret!.length);
   return ret;
 }

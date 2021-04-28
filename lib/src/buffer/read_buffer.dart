@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 class ReadBuffer {
-  ReadBuffer({List<int> init}) {
+  ReadBuffer({List<int>? init}) {
     if (init != null) append(init);
   }
 
@@ -69,7 +69,7 @@ class ReadBuffer {
     return i;
   }
 
-  List<int> readRow([int max]) {
+  List<int> readRow([int? max]) {
     final first = _queue.first;
     int available = _queue.first.length - _position;
     if (max == null || available <= max) {
