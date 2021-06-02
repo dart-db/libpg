@@ -12,7 +12,7 @@ Future<void> main() async {
   final statement =
       await conn.prepare(r'SELECT * FROM intervals;', statementName: 'st1');
   // final rows = await conn.queryPrepared(statement, [TextData([52]), TextData([51])]);
-  final rows = await conn.queryPrepared(statement, []);
+  final rows = conn.queryPrepared(statement, []);
   await for (var r in rows) {
     print(r.asMap());
   }

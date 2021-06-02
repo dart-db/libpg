@@ -14,11 +14,11 @@ Future<void> main() async {
   );
 
   // Query
-  final row1 = await pool.query('SELECT 1');
+  final row1 = pool.query('SELECT 1');
   print(await row1.toList());
 
   // Execute
-  final row2 = await pool.query("update person set name='Mark' where id = 1");
+  final row2 = pool.query("update person set name='Mark' where id = 1");
   print(await row2.finished);
 
   // Release all connections in the pool

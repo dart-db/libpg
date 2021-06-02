@@ -8,13 +8,13 @@ void main() {
       final pool = PGPool(
         ConnSettings(username: 'teja', password: 'learning'),
       );
-      final row1 = await pool.query('SELECT 1');
+      final row1 = pool.query('SELECT 1');
       await row1.finished;
       expect((await row1.first).toList(), [1]);
-      final row2 = await pool.query('SELECT 2');
+      final row2 = pool.query('SELECT 2');
       await row2.finished;
       expect((await row2.first).toList(), [2]);
-      final row3 = await pool.query('SELECT 3');
+      final row3 = pool.query('SELECT 3');
       await row3.finished;
       expect((await row3.first).toList(), [3]);
 

@@ -161,7 +161,6 @@ class ConnectionImpl implements Connection {
       case MessageType.authRequest:
         _handleAuthRequestMsg();
         break;
-        break;
       case MessageType.backendKey:
         _handleBackendKeyDataMsg();
         break;
@@ -174,7 +173,6 @@ class ConnectionImpl implements Connection {
       default:
         throw Exception(
             'Unknown message type (${_curMsgHeader!.messageType}) received');
-        break;
     }
   }
 

@@ -12,7 +12,7 @@ Future<void> main() async {
   final statement = await conn.prepare(r'INSERT INTO intss VALUES ($1);',
       statementName: 'st1');
   // final rows = await conn.queryPrepared(statement, [TextData([52]), TextData([51])]);
-  final rows = await conn.queryPrepared(statement, [
+  final rows = conn.queryPrepared(statement, [
     <List<int>>[
       <int>[30, 31, 32, 33, 34],
       <int>[35, 36, 37, 38, 39]

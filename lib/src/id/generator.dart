@@ -14,6 +14,7 @@ class _IdGenerator implements IdGenerator {
 
   _IdGenerator({this.prefix});
 
+  @override
   String get get {
     _updateSubIds();
 
@@ -42,6 +43,7 @@ class TimedIdGenerator implements IdGenerator {
 
   TimedIdGenerator({this.prefix});
 
+  @override
   String get get {
     final newTime = DateTime.now();
 

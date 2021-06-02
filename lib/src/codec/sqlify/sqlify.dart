@@ -67,7 +67,7 @@ String timestampToSql(DateTime datetime) {
     string = string.substring(1);
   }
 
-  return "'${string}'";
+  return "'$string'";
 }
 
 String intervalToSql(Duration value) => "INTERVAL '$value'";
@@ -106,7 +106,7 @@ String intervalToSqlVerbose(Duration value) {
 String arrayToSql(List list) {
   final sb = StringBuffer('\'{');
   for (int i = 0; i < list.length; i++) {
-    sb.write(sqlify(list[i], quote: '"') ?? 'NULL');
+    sb.write(sqlify(list[i], quote: '"'));
     if (i < list.length - 1) sb.write(',');
   }
   sb.write('}\'');
@@ -117,7 +117,7 @@ String recordToSql(PGRecord record, {String quote = "'"}) {
   final list = record.data;
   final sb = StringBuffer('(');
   for (int i = 0; i < list.length; i++) {
-    sb.write(sqlify(list[i], quote: quote) ?? 'NULL');
+    sb.write(sqlify(list[i], quote: quote));
     if (i < list.length - 1) sb.write(',');
   }
   sb.write(')');

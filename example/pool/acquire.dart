@@ -19,12 +19,12 @@ Future<void> main() async {
       'SELECT * FROM tint2 OFFSET \$1 LIMIT \$2',
       statementName: 'st1');
 
-  var rows = await conn.queryPrepared(statement, ['3', 2]);
+  var rows = conn.queryPrepared(statement, ['3', 2]);
   await for (var r in rows) {
     print(r.asMap());
   }
 
-  rows = await conn.queryPrepared(statement, ['3', 2]);
+  rows = conn.queryPrepared(statement, ['3', 2]);
   await for (var r in rows) {
     print(r.asMap());
   }

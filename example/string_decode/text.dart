@@ -9,7 +9,7 @@ Future<void> main() async {
       ConnSettings(
           username: 'teja', password: 'learning', databaseName: 'learning'),
       logger: log);
-  final row = await (conn.query('SELECT * FROM TText;'));
+  final row = conn.query('SELECT * FROM TText;');
   await for (final row in row) {
     print(row);
   }

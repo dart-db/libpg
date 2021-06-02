@@ -22,7 +22,7 @@ Future<void> main() async {
   final statement = await conn.prepare(r'INSERT INTO customs VALUES ($1);',
       statementName: 'st1');
   // final rows = await conn.queryPrepared(statement, [TextData([52]), TextData([51])]);
-  final rows = await conn.queryPrepared(statement, [Custom(5, '5')]);
+  final rows = conn.queryPrepared(statement, [Custom(5, '5')]);
   await for (var r in rows) {
     print(r.asMap());
   }

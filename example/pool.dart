@@ -11,11 +11,11 @@ Future<void> main() async {
     ConnSettings(username: 'teja', password: 'learning'),
     logger: log,
   );
-  final row1 = await pool.query('SELECT 1');
+  final row1 = pool.query('SELECT 1');
   await row1.finished;
-  final row2 = await pool.query('SELECT 2');
+  final row2 = pool.query('SELECT 2');
   await row2.finished;
-  final row3 = await pool.query('SELECT 3');
+  final row3 = pool.query('SELECT 3');
   await row3.finished;
 
   await pool.close();

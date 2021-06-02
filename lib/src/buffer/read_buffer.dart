@@ -118,7 +118,7 @@ class ReadBuffer {
   }
 
   void append(List<int> data) {
-    if (data == null || data.isEmpty) {
+    if (data.isEmpty) {
       throw Exception('Attempted to append null or empty list.');
     }
 

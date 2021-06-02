@@ -11,7 +11,7 @@ Future<void> main() async {
       logger: log);
   final statement =
       await conn.prepare(r'SELECT * FROM jsons;', statementName: 'st1');
-  final rows = await conn.queryPrepared(statement, []);
+  final rows = conn.queryPrepared(statement, []);
   await for (var r in rows) {
     print(r.asMap());
   }

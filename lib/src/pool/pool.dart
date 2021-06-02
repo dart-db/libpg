@@ -665,7 +665,7 @@ class _Connection implements PoolQuerier {
 class PoolPreparedQuery implements PreparedQuery {
   final PGPool pool;
 
-  PreparedQueryImpl _inner;
+  final PreparedQueryImpl _inner;
 
   PoolPreparedQuery(this.pool, this._inner);
 

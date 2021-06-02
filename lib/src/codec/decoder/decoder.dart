@@ -9,7 +9,6 @@ import 'package:libpg/src/message/row_description.dart';
 import 'package:libpg/src/types/oids.dart';
 
 dynamic decode(final FieldDescription description, List<int> data) {
-  if (data == null) return null;
   switch (description.formatType) {
     case FormatType.text:
       try {
@@ -18,7 +17,6 @@ dynamic decode(final FieldDescription description, List<int> data) {
       } catch (e) {
         return TextData(data);
       }
-      break;
     case FormatType.binary:
       return _decodeBinary(description, data);
     default:
@@ -52,6 +50,11 @@ dynamic _decodeText(final FieldDescription description, String data) {
     case OIDs.float4:
       return double.parse(data);
     case OIDs.float8:
+      return double.parse(data);
+    case OIDs.numeric:
+      if (data == '') {
+        return null;
+      }
       return double.parse(data);
     case OIDs.text:
     case OIDs.BPChar:

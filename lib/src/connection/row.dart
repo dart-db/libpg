@@ -53,7 +53,7 @@ class Row {
       if (index >= _columns.length) throw Exception('Index out of range');
       return _values[index];
     } else if (index is String) {
-      index = (index as String).toLowerCase();
+      index = index.toLowerCase();
       if (!_map.containsKey(index)) {
         throw Exception('Index does not exist: $index');
       }
