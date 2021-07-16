@@ -117,7 +117,18 @@ class CommandTag {
 
   static CommandTag parse(String tag) {
     final parts = tag.split(' ');
-    return CommandTag(parts.first, tag, int.parse(parts.last));
+    int ra = 0;
+    switch(parts[0]) {
+      case 'INSERT':
+      case 'DELETE':
+      case 'UPDATE':
+      case 'SELECT':
+      case 'MOVE':
+      case 'FETCH':
+      case 'COPY':
+        ra = int.parse(parts.last);
+    }
+    return CommandTag(parts.first, tag, ra);
   }
 
   @override
