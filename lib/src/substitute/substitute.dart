@@ -1,6 +1,6 @@
 import 'dart:collection';
-
 import 'package:libpg/src/codec/sqlify/sqlify.dart';
+import 'package:libpg/libpg.dart' as libpg;
 
 String substitute(String statement,
     {Map<String, dynamic> values = const {},
@@ -46,4 +46,11 @@ class _Sub implements Comparable<_Sub> {
 
   @override
   int compareTo(_Sub other) => start - other.start;
+}
+
+extension StringSqlSubstitute on String {
+  String substitute(Map<String, dynamic> values) {
+    final ret = libpg.substitute(replaceAll('\n', ''), values: values);
+    return ret;
+  }
 }
