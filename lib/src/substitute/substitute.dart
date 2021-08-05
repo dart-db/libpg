@@ -50,7 +50,6 @@ class _Sub implements Comparable<_Sub> {
 
 extension StringSqlSubstitute on String {
   String substitute(Map<String, dynamic> values) {
-    final ret = libpg.substitute(replaceAll('\n', ''), values: values);
-    return ret;
+    return libpg.substitute(this, values: values);
   }
 }
