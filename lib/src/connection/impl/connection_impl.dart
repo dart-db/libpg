@@ -224,7 +224,7 @@ class ConnectionImpl implements Connection {
     }
 
     if (msg is UnsupportedAuthMessage) {
-      throw Exception('Unsupported auth method request received from server');
+      throw Exception('Unsupported auth method request received from server: ${msg.method}');
     }
 
     throw Exception('Unknown auth method request received from server');
