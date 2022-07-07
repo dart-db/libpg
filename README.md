@@ -2,5 +2,7 @@
 
 # TODO
 
-+ [ ] Jaguar query support
++ [ ] Unix domain socket
 + [ ] CopyIn support
++ [ ] Fix exception bug
++ [ ] Jaguar query support
