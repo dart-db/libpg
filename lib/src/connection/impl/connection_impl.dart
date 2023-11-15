@@ -9,9 +9,10 @@ import 'package:crypto/crypto.dart';
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/buffer/read_buffer.dart';
 import 'package:libpg/src/codec/encode/encode.dart';
+import 'package:libpg/src/connection/auth/auth.dart';
 import 'query_queue_entry/query_entry.dart';
 import 'package:libpg/src/connection/row.dart';
-import 'package:libpg/src/id/generator.dart';
+import 'package:libpg/src/util/generator.dart';
 import 'package:libpg/src/logger/logger.dart';
 import 'package:libpg/src/message/authreq.dart';
 import 'package:libpg/src/message/backendkey.dart';
@@ -54,6 +55,8 @@ class ConnectionImpl implements Connection {
 
   final IdGenerator _queryIdGenerator;
 
+  StreamSubscription? _socketSubscription;
+
   ConnectionImpl._(this._socket, this.settings,
       {Logger? logger, String? connectionName, IdGenerator? queryIdGenerator})
       : _logger = logger ?? nopLogger,
@@ -62,7 +65,7 @@ class ConnectionImpl implements Connection {
     _connectionName = connectionName ?? connectionId;
     _state = _ConnState.socketConnected;
 
-    _socket.listen(_gotData, onError: (e) {
+    _socketSubscription = _socket.listen(_gotData, onError: (e) {
       print(e); // TODO log instead
       // TODO
     }, onDone: () {
@@ -109,18 +112,13 @@ class ConnectionImpl implements Connection {
 
       if (_curMsgHeader!.length > _buffer.bytesAvailable) return;
 
-      _handleMessage();
+      _handleMessage(_curMsgHeader!);
 
       _curMsgHeader = null;
     }
   }
 
-  static String _md5Encode(String s) {
-    final bytes = md5.convert(s.codeUnits.toList()).bytes;
-    return hex.encode(bytes);
-  }
-
-  void _handleMessage() {
+  void _handleMessage(MessageHeader header) {
     final messageName = MessageType.name[_curMsgHeader!.messageType];
     _log(LogMessage(
         message:
@@ -159,7 +157,7 @@ class ConnectionImpl implements Connection {
         _handleCloseCompleteMsg();
         break;
       case MessageType.authRequest:
-        _handleAuthRequestMsg();
+        _handleAuthRequestMsg(header);
         break;
       case MessageType.backendKey:
         _handleBackendKeyDataMsg();
@@ -182,52 +180,65 @@ class ConnectionImpl implements Connection {
     _sendNext();
   }
 
-  void _handleAuthRequestMsg() {
+  Auth? _auth;
+
+  void _handleAuthRequestMsg(MessageHeader header) {
     if (_state != _ConnState.authenticating) {
       throw Exception('Invalid connection state while authenticating');
     }
 
-    final msg = AuthMessage.parse(_buffer);
+    final msg = AuthMessage.parse(_buffer, header);
 
     _log(LogMessage(
         message: 'Authentication request received of type ${msg.method}',
         connectionName: connectionName,
         connectionId: connectionId));
 
-    if (msg is AuthOkMessage) {
-      _log(LogMessage(
-          message: 'Authentication successfull',
-          level: LogLevel.info,
-          connectionName: connectionName,
-          connectionId: connectionId));
-      _state = _ConnState.authenticated;
-      return;
+    if (_auth == null) {
+      if (msg is AuthMd5PasswordMessage) {
+        _log(LogMessage(
+            message: 'Performing MD5 password authentication',
+            connectionName: connectionName,
+            connectionId: connectionId));
+        _auth = MD5Auth(
+            username: settings.username ?? '',
+            password: settings.password ?? '');
+        return;
+      } else if (msg is AuthSasl) {
+        _log(LogMessage(
+            message: 'Performing SASL password authentication',
+            connectionName: connectionName,
+            connectionId: connectionId));
+        _auth = SCRAMAuth(
+            username: settings.username ?? '',
+            password: settings.password ?? '');
+      } else if (msg is AuthCleartextPasswordMessage) {
+        _log(LogMessage(
+            message: 'Performing cleartext password authentication',
+            connectionName: connectionName,
+            connectionId: connectionId));
+        _auth = CleartextPasswordAuth(password: settings.password ?? '');
+      } else {
+        _connectionError(Exception('Unsupported auth method: ${msg.method}'));
+        return;
+      }
     }
 
-    if (msg is AuthMd5PasswordMessage) {
-      _log(LogMessage(
-          message: 'Performing MD5 password authentication',
-          connectionName: connectionName,
-          connectionId: connectionId));
-
-      // TODO check that username and password are not null?
-
-      final withoutSalt =
-          _md5Encode((settings.password ?? '') + (settings.username ?? ''));
-      final hash =
-          'md5' + _md5Encode(withoutSalt + String.fromCharCodes(msg.salt));
-
-      final resp = PasswordMessage(hash).build();
+    try {
+      final resp = _auth!.handle(msg);
       _socket.add(resp);
-
-      return;
+      if (_auth!.isDone) {
+        _state = _ConnState.authenticated;
+        return;
+      }
+    } on Exception catch (e) {
+      _connectionError(e);
     }
+  }
 
-    if (msg is UnsupportedAuthMessage) {
-      throw Exception('Unsupported auth method request received from server: ${msg.method}');
-    }
-
-    throw Exception('Unknown auth method request received from server');
+  void _connectionError(Exception err) {
+    _connected.completeError(err);
+    _shutdown();
   }
 
   void _handleReadyForQueryMsg() {
@@ -633,6 +644,7 @@ class ConnectionImpl implements Connection {
       {String? connectionName,
       Logger? logger,
       IdGenerator? queryIdGenerator}) async {
+    // TODO implement UNIX domain sockets
     Socket socket = await Socket.connect(settings.hostname, settings.port);
 
     // TODO ssl

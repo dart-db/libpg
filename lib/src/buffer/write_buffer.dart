@@ -85,4 +85,6 @@ class WriteBuffer {
   }
 
   List<int> get data => _data;
+
+  static List<int> encodeUtf8String(String s) => [...utf8.encode(s), 0];
 }

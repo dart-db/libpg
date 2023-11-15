@@ -4,7 +4,7 @@ import 'dart:collection';
 import 'package:channel/channel.dart';
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/connection/row.dart';
-import 'package:libpg/src/id/generator.dart';
+import 'package:libpg/src/util/generator.dart';
 import 'package:libpg/src/logger/logger.dart';
 import 'package:libpg/src/message/row_description.dart';
 import 'package:pedantic/pedantic.dart';
