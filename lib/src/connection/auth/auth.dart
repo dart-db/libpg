@@ -10,6 +10,19 @@ abstract class Auth {
   bool get isDone;
 }
 
+class TrustedAuth implements Auth {
+  @override
+  List<int> handle(AuthMessage msg) {
+    if (msg is AuthOkMessage) {
+      return [];
+    }
+    throw Exception('unsupported message: ${msg.runtimeType} for trusted');
+  }
+
+  @override
+  bool get isDone => true;
+}
+
 class MD5Auth implements Auth {
   final String username;
   final String password;

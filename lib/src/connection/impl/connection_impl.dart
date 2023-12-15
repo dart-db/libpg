@@ -218,6 +218,12 @@ class ConnectionImpl implements Connection {
             connectionName: connectionName,
             connectionId: connectionId));
         _auth = CleartextPasswordAuth(password: settings.password ?? '');
+      } else if(msg is AuthOkMessage) {
+        _log(LogMessage(
+            message: 'Trusted authentication',
+            connectionName: connectionName,
+            connectionId: connectionId));
+        _auth = TrustedAuth();
       } else {
         _connectionError(Exception('Unsupported auth method: ${msg.method}'));
         return;
