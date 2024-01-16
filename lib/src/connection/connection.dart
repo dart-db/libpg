@@ -118,7 +118,7 @@ class CommandTag {
   static CommandTag parse(String tag) {
     final parts = tag.split(' ');
     int ra = 0;
-    switch(parts[0]) {
+    switch (parts[0]) {
       case 'INSERT':
       case 'DELETE':
       case 'UPDATE':

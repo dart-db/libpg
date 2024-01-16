@@ -150,7 +150,7 @@ double? _parseFloat(dynamic _input) {
 }
 
 bool parseBool(String input) {
-  switch(input) {
+  switch (input) {
     case 't':
     case 'true':
     case 'yes':

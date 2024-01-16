@@ -218,7 +218,7 @@ class ConnectionImpl implements Connection {
             connectionName: connectionName,
             connectionId: connectionId));
         _auth = CleartextPasswordAuth(password: settings.password ?? '');
-      } else if(msg is AuthOkMessage) {
+      } else if (msg is AuthOkMessage) {
         _log(LogMessage(
             message: 'Trusted authentication',
             connectionName: connectionName,

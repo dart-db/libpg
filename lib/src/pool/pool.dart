@@ -454,7 +454,8 @@ class _PGPoolImpl implements PGPool {
     Duration? duration = _connectionReuseTimeout;
 
     if (_maxIdleConnections != null &&
-        (_connections.length - _usedConnections.length) < _maxIdleConnections!) {
+        (_connections.length - _usedConnections.length) <
+            _maxIdleConnections!) {
       if (duration != null &&
           _idleConnectionTimeout != null &&
           _idleConnectionTimeout! < duration) {
@@ -494,7 +495,8 @@ class _PGPoolImpl implements PGPool {
     if (_maxIdleConnections == null || _connectionReuseTimeout == null) return;
 
     while (_idleConnections.isNotEmpty &&
-        (_connections.length - _usedConnections.length) > _maxIdleConnections!) {
+        (_connections.length - _usedConnections.length) >
+            _maxIdleConnections!) {
       final connection = _idleConnections.first;
       final at = _idleTimes[connection]!;
       if (DateTime.now().difference(at) < _connectionReuseTimeout!) break;

@@ -80,7 +80,7 @@ class CleartextPasswordAuth implements Auth {
 
   @override
   List<int> handle(AuthMessage msg) {
-    if(msg is AuthCleartextPasswordMessage) {
+    if (msg is AuthCleartextPasswordMessage) {
       return _handleInitial(msg);
     } else if (msg is AuthOkMessage) {
       return _handleOk(msg);
