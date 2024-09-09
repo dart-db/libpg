@@ -3,9 +3,7 @@ import 'dart:async';
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/codec/decoder/decoder.dart';
 import 'query_entry.dart';
-import 'package:libpg/src/connection/row.dart';
 import 'package:libpg/src/exception/postgres_server.dart';
-import 'package:libpg/src/message/error_response.dart';
 import 'package:libpg/src/message/row_data.dart';
 import 'package:libpg/src/message/row_description.dart';
 
@@ -41,7 +39,7 @@ class ExtendedQueryEntry implements QueueEntry {
 
   CommandTag? get commandTag => _commandTag;
 
-  Future<CommandTag> get onFinish => _completer.future;
+  Future<CommandTag> get onFinish => _completer.future..ignore();
 
   void addRow(RowData rowData) {
     final values = List<dynamic>.filled(fieldDescriptions.length, null);
@@ -95,9 +93,13 @@ class ExtendedQueryEntry implements QueueEntry {
     _controller.close();
 
     if (_commandTag != null) {
-      _completer.complete(_commandTag);
+      _completer.complete(commandTag);
     } else if (_error.isNotEmpty) {
-      _completer.completeError(_error.toList());
+      if(_error.length == 1) {
+        _completer.completeError(_error.first);
+      } else {
+        _completer.completeError(_error.toList());
+      }
     } else {
       _completer.completeError('command tag not received');
     }

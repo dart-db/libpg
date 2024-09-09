@@ -8,8 +8,13 @@ void log(LogMessage msg) {
 Future<void> main() async {
   final conn = await Connection.connect(
       ConnSettings(
-          username: 'teja', password: 'learning', databaseName: 'learning'),
+          username: 'libpg', password: 'libpg_pwd', databaseName: 'libpg_db'),
       logger: log);
+
+  await conn.execute('CREATE TEMP TABLE tint2 (a int)');
+  for (var i = 0; i < 10; i++) {
+    await conn.execute('INSERT INTO tint2 VALUES ($i)');
+  }
 
   // Prepare a statement
   final st = await conn.prepare(r'SELECT * FROM tint2 LIMIT $1',
@@ -18,7 +23,7 @@ Future<void> main() async {
   // Query using prepared statement
   var row1 = conn.queryPrepared(st, [1]);
   await for (final r in row1) {
-    print(r);
+    print('result is $r');
   }
 
   // Query again using prepared statement
@@ -33,8 +38,8 @@ Future<void> main() async {
   // Querying closed statement should produce [PreparedStatementNotExists] exception
   try {
     await conn.queryPrepared(st, [2]).finished;
-    throw Exception('expcected statement not found expected');
-  } on PreparedStatementNotExists {
+    throw Exception('PreparedStatementNotExists exception expected');
+  } on PreparedStatementNotExists catch (e) {
     // As expected!
   }
 

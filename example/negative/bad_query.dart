@@ -6,7 +6,7 @@ void log(LogMessage msg) {
 
 Future<void> main() async {
   final conn = await Connection.connect(
-      ConnSettings(username: 'learn', password: 'learning'),
+      ConnSettings(username: 'libpg', password: 'libpg_pwd'),
       logger: log);
   await conn.query('SELECT sdsdf').finished.catchError((e) {
     print(e);

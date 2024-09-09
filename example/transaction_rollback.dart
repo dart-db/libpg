@@ -7,7 +7,7 @@ void log(LogMessage msg) {
 Future<void> main() async {
   final conn = await Connection.connect(
       ConnSettings(
-          username: 'teja', password: 'learning', databaseName: 'trying'),
+          username: 'tejag', password: 'learning', databaseName: 'trying'),
       logger: log);
 
   await conn.execute('DROP TABLE IF EXISTS Numbers');

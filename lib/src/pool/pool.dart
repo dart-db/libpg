@@ -3,10 +3,8 @@ import 'dart:collection';
 
 import 'package:channel/channel.dart';
 import 'package:libpg/libpg.dart';
-import 'package:libpg/src/connection/row.dart';
-import 'package:libpg/src/util/generator.dart';
-import 'package:libpg/src/logger/logger.dart';
 import 'package:libpg/src/message/row_description.dart';
+import 'package:libpg/src/util/generator.dart';
 import 'package:pedantic/pedantic.dart';
 
 abstract class PGPool implements Querier {
@@ -134,29 +132,29 @@ class _PGPoolImpl implements PGPool {
           connectionId: connection.connectionId,
           queryName: queryName,
           message: 'Got connection from the pool'));
+      Rows rows;
       try {
-        final ret = connection.query(query, queryName: queryName);
-        controller.addStream(ret, cancelOnError: true).then((_) {
-          controller.close();
-        }).catchError((e, t) {
-          controller.addError(e, t);
-        });
-        ret.finished.then((tag) {
-          completer.complete(tag);
-          unawaited(_releaseConnectionToPool(connection));
-        }, onError: (e, s) {
-          completer.completeError(e, s);
-          unawaited(_releaseConnectionToPool(connection));
-        });
+        rows = connection.query(query, queryName: queryName);
       } catch (e, s) {
-        if (connection != null) {
-          unawaited(_releaseConnectionToPool(connection));
-        }
+        unawaited(_releaseConnectionToPool(connection));
         controller.addError(e, s);
         completer.completeError(e, s);
+        return;
       }
+      rows.finished.then((tag) {
+        completer.complete(tag);
+        unawaited(_releaseConnectionToPool(connection));
+      }, onError: (e, s) {
+        unawaited(_releaseConnectionToPool(connection));
+        completer.completeError(e, s);
+      });
+      controller.addStream(rows, cancelOnError: true).then((_) {
+        controller.close();
+      }).catchError((e, t) {
+        controller.addError(e, t);
+      });
     });
-    return Rows(controller.stream, completer.future);
+    return Rows(controller.stream, completer.future..ignore());
   }
 
   @override
@@ -225,30 +223,29 @@ class _PGPoolImpl implements PGPool {
     final controller = StreamController<Row>();
     final completer = Completer<CommandTag>();
     _awaitForConnection(connection).then((connection) {
+      Rows rows;
       try {
-        final ret =
-            connection.queryPrepared(query, params, queryName: queryName);
-        controller.addStream(ret, cancelOnError: true).then((_) {
-          controller.close();
-        }).catchError((e, t) {
-          controller.addError(e, t);
-        });
-        ret.finished.then((tag) {
-          unawaited(_releaseConnectionToPool(connection));
-          completer.complete(tag);
-        }, onError: (e, s) {
-          unawaited(_releaseConnectionToPool(connection));
-          completer.completeError(e, s);
-        });
+        rows = connection.queryPrepared(query, params, queryName: queryName);
       } catch (e, s) {
-        if (connection != null) {
-          unawaited(_releaseConnectionToPool(connection));
-        }
+        unawaited(_releaseConnectionToPool(connection));
         controller.addError(e, s);
         completer.completeError(e, s);
+        return;
       }
+      rows.finished.then((tag) {
+        unawaited(_releaseConnectionToPool(connection));
+        completer.complete(tag);
+      }, onError: (e, s) {
+        unawaited(_releaseConnectionToPool(connection));
+        completer.completeError(e, s);
+      });
+      controller.addStream(rows, cancelOnError: true).then((_) {
+        controller.close();
+      }).catchError((e, t) {
+        controller.addError(e, t);
+      });
     });
-    return Rows(controller.stream, completer.future);
+    return Rows(controller.stream, completer.future..ignore());
   }
 
   @override
@@ -281,10 +278,6 @@ class _PGPoolImpl implements PGPool {
     if (_closed) throw Exception('Closed');
 
     final connection = await _getConnection();
-    if (connection == null) {
-      throw Exception('error acquiring connection');
-    }
-
     return _Connection(this, connection);
   }
 

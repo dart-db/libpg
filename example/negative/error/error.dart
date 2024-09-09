@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:libpg/libpg.dart';
 
 void log(LogMessage msg) {
@@ -6,17 +8,28 @@ void log(LogMessage msg) {
 
 Future<void> main() async {
   final conn = await Connection.connect(
-      ConnSettings(username: 'learn', password: 'learning'),
+      ConnSettings(username: 'libpg', password: 'libpg_pwd'),
       logger: log);
 
-  await conn.query('SELECT sdsdf').finished.catchError((e) {
+  var rows = conn.query('SELECT sdsdf');
+  try {
+    await rows.one();
+  } catch (e) {
     print(e);
-  });
+  }
 
-  var rows = conn.query('select * from (values (1), (2)) data');
-  await for (final row in rows) {
+  var rows2 = conn.query('select * from (values (1), (2)) data');
+  await for (final row in rows2) {
     print(row);
   }
+
+  try {
+    await rows.finished;
+  } catch (e) {
+    print(e);
+  }
+
+  print('Success!');
 
   await conn.close();
 }

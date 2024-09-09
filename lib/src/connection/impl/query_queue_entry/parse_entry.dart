@@ -52,7 +52,7 @@ class ParseEntry implements QueueEntry {
   }
 
   PreparedQuery? complete() {
-    if (_error != null) {
+    if (_error == null) {
       final result = PreparedQueryImpl(
           connection,
           statementName,

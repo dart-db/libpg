@@ -4,31 +4,25 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:convert/convert.dart';
-import 'package:crypto/crypto.dart';
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/buffer/read_buffer.dart';
 import 'package:libpg/src/codec/encode/encode.dart';
 import 'package:libpg/src/connection/auth/auth.dart';
-import 'query_queue_entry/query_entry.dart';
-import 'package:libpg/src/connection/row.dart';
-import 'package:libpg/src/util/generator.dart';
-import 'package:libpg/src/logger/logger.dart';
 import 'package:libpg/src/message/authreq.dart';
 import 'package:libpg/src/message/backendkey.dart';
-import 'package:libpg/src/message/error_response.dart';
 import 'package:libpg/src/message/message_header.dart';
+import 'package:libpg/src/message/message_type.dart';
 import 'package:libpg/src/message/parameter_description.dart';
 import 'package:libpg/src/message/parameter_status.dart';
 import 'package:libpg/src/message/parse.dart';
-import 'package:libpg/src/message/password.dart';
 import 'package:libpg/src/message/query.dart';
 import 'package:libpg/src/message/row_data.dart';
 import 'package:libpg/src/message/row_description.dart';
 import 'package:libpg/src/message/startup.dart';
 import 'package:libpg/src/message/terminate.dart';
+import 'package:libpg/src/util/generator.dart';
 
-import 'package:libpg/src/message/message_type.dart';
+import 'query_queue_entry/query_entry.dart';
 
 class ConnectionImpl implements Connection {
   final Socket _socket;
@@ -336,8 +330,12 @@ class ConnectionImpl implements Connection {
 
   void _handleParameterDescriptionMsg() {
     final msg = ParameterDescriptionMsg.parse(_buffer);
-    if (_currentQuery is ParseEntry) {
-      // TODO (_currentQuery as ParseEntry).
+    final currentQuery = _currentQuery;
+    if (currentQuery is ParseEntry) {
+      currentQuery.setReceivedParamOIDs(msg.paramOIDs);
+    } else {
+      throw UnsupportedError(
+          'ParameterDescriptionMsg for ${currentQuery.runtimeType}');
     }
     // TODO
   }

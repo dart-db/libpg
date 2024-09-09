@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/codec/decoder/decoder.dart';
-import 'query_entry.dart';
-import 'package:libpg/src/connection/row.dart';
 import 'package:libpg/src/message/row_data.dart';
 import 'package:libpg/src/message/row_description.dart';
+
+import 'query_entry.dart';
 
 class SimpleQueryEntry implements QueueEntry {
   final String statement;
@@ -34,7 +34,7 @@ class SimpleQueryEntry implements QueueEntry {
 
   Stream<Row> get stream => _controller.stream;
 
-  Future<CommandTag> get onFinish => _completer.future;
+  Future<CommandTag> get onFinish => _completer.future..ignore();
 
   List<FieldDescription> get fieldDescriptions => _fields!;
 
@@ -91,9 +91,13 @@ class SimpleQueryEntry implements QueueEntry {
     _controller.close();
 
     if (_commandTag != null) {
-      _completer.complete(_commandTag);
+      _completer.complete(commandTag);
     } else if (_error.isNotEmpty) {
-      _completer.completeError(_error.toList());
+      if(_error.length == 1) {
+        _completer.completeError(_error.first);
+      } else {
+        _completer.completeError(_error.toList());
+      }
     } else {
       _completer.completeError('command tag not received');
     }
