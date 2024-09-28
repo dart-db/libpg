@@ -10,5 +10,7 @@ linter:
     omit_local_variable_types: false
 
 analyzer:
+  errors:
+    body_might_complete_normally_catch_error: ignore
 #   exclude:
 #     - path/to/excluded/files/**

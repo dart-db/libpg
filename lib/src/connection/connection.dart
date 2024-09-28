@@ -4,9 +4,7 @@ import 'dart:convert';
 
 import 'package:libpg/libpg.dart';
 import 'package:libpg/src/connection/impl/connection_impl.dart';
-import 'package:libpg/src/connection/row.dart';
 import 'package:libpg/src/util/generator.dart';
-import 'package:libpg/src/logger/logger.dart';
 import 'package:libpg/src/message/row_description.dart';
 
 export 'row.dart';

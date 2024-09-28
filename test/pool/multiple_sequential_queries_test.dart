@@ -1,5 +1,4 @@
 import 'package:libpg/libpg.dart';
-import 'package:libpg/src/pool/pool.dart';
 import 'package:test/test.dart';
 
 void main() {

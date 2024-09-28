@@ -1,6 +1,4 @@
 import 'package:libpg/libpg.dart';
-import 'package:libpg/src/logger/logger.dart';
-import 'package:libpg/src/pool/pool.dart';
 
 void log(LogMessage msg) {
   print('${msg.at}\t${msg.connectionId}\t${msg.message}');

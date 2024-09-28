@@ -39,7 +39,7 @@ Future<void> main() async {
   try {
     await conn.queryPrepared(st, [2]).finished;
     throw Exception('PreparedStatementNotExists exception expected');
-  } on PreparedStatementNotExists catch (e) {
+  } on PreparedStatementNotExists catch (_) {
     // As expected!
   }
 

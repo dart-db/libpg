@@ -32,7 +32,7 @@ Future<void> go(Connection conn, bool thro) async {
       throw Exception();
     }
     await conn.execute('COMMIT');
-  } on Exception catch (e) {
+  } on Exception catch (_) {
     // Ignored
   } finally {
     await conn.execute('ROLLBACK');
